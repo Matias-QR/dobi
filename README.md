@@ -1,147 +1,360 @@
-# 🔌 Dobi Protocol Frontend
+# Electric Charger API - Blockchain & Simulation
 
-Frontend interface for Dobi Protocol Web3 IoT platform with integrated API proxy to avoid CORS issues.
+Complete electric charger management system with Base Mainnet blockchain integration, automatic transaction simulation, and real-time monitoring.
 
-## 🚀 Features
+## Key Features
 
-- **Modern Dark Theme** - Elegant dark interface matching dobi.guru aesthetic
-- **Real-time API Integration** - Direct connection to Dobi API with proxy
-- **Charger Management** - View and manage IoT chargers from the API
-- **Web3 Integration** - MetaMask wallet connection
-- **Responsive Design** - Works on all devices
-- **Real-time Statistics** - Live dashboard with charger data
+### Blockchain Integration
+- Unique wallets for each charger using ethers.js
+- Real transactions on Base Mainnet (configurable)
+- Automatic management of funds and operational costs
+- Simulation mode for development and testing
 
-## 🛠️ Installation
+### Intelligent Simulation
+- Automatic transactions randomly scheduled
+- Realistic operating hours (8 AM - 10 PM)
+- Configurable daily limits per charger
+- Realistic economics (costs = 40% of income)
+
+### Complete Management
+- SQLite database for persistence
+- Detailed logging system
+- Complete REST API with validation
+- Real-time blockchain queries
+
+## Installation
 
 ### Prerequisites
-- Node.js 16+ 
+- Node.js (v14 or higher)
 - npm or yarn
+- Internet access (for Base RPC)
 
-### Setup
+### Installation Steps
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Matias-QR/dobi.git
-   cd dobi
-   ```
+# Clone or download the project
+git clone <your-repository>
+cd dobi-api
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install express sqlite3 ethers dotenv
 
-3. **Start the server**
-   ```bash
-   npm start
-   ```
+# Create configuration file
+cp .env.example .env
 
-4. **Open your browser**
-   Navigate to `http://localhost:3001`
+# Edit environment variables
+nano .env
 
-## 📁 Project Structure
+# Create initial data (optional)
+nano chargers.json
 
-```
-dobi/
-├── public/                 # Frontend files
-│   ├── index.html         # Main HTML file
-│   ├── styles/            # CSS files
-│   ├── js/                # JavaScript modules
-│   └── services/          # API services
-├── server.js              # Express server with proxy
-├── package.json           # Dependencies
-└── README.md             # This file
-```
+# Run the server
+node server.js
 
-## 🔌 API Integration
+## Configuration
 
-The frontend connects to the Dobi API at `https://api-aleph.dobi.guru` through a local proxy to avoid CORS issues.
+### .env File
 
-### Available Endpoints
-- **Chargers**: `/api/chargers/detailed` - Get detailed charger information
-- **Devices**: `/api/devices/*` - Device management
-- **Transactions**: `/api/transactions/*` - Transaction history
+# Server
+PORT=6139
 
-## 🎨 Customization
+# Blockchain
+BASE_RPC=https://mainnet.base.org
+SEND_ONCHAIN=false
+MASTER_PRIVATE_KEY=your_private_key_here
 
-### Colors
-The theme uses CSS variables that can be easily modified in `public/styles/main.css`:
+# Simulation
+MIN_TX_ETH=0.0001
+MAX_TX_ETH=0.0002
 
-```css
-:root {
-    --primary-color: #00d4aa;
-    --bg-color: #0f0f23;
-    --text-color: #ffffff;
-    /* ... more variables */
+# Security
+API_KEY=your_secure_api_key_here
+
+### chargers.json File (optional)
+
+[
+  {
+    "id_charger": "CHARGER_001",
+    "owner_address": "0x742d35Cc6634C0532925a3b8D56B4B8d3d73a9B1",
+    "status": "active",
+    "transactions": 0,
+    "income_generated": 0,
+    "cost_generated": 0,
+    "balance_total": 0
+  }
+]
+
+## Project Structure
+
+dobi-api/
+├── server.js              # Main server
+├── test.js               # Test script
+├── .env                  # Environment variables (DO NOT commit)
+├── .gitignore           # Files to ignore
+├── chargers.json        # Initial data (optional)
+├── chargers.db          # SQLite database (auto-generated)
+├── package.json         # Project dependencies
+└── README.md           # This file
+
+## API Endpoints
+
+### Charger Management
+
+#### POST /api/chargers
+Creates a new charger with unique wallet.
+{
+  "id_charger": "CHARGER_001",
+  "owner_address": "0x742d35Cc6634C0532925a3b8D56B4B8d3d73a9B1",
+  "status": "active"
 }
-```
 
-### Components
-All UI components are styled in separate CSS files:
-- `main.css` - Global styles and layout
-- `components.css` - Buttons, cards, modals
-- `forms.css` - Form styling
-- `responsive.css` - Mobile responsiveness
+#### GET /api/chargers/detailed
+Gets complete information for all chargers.
+{
+  "summary": {
+    "total_chargers": 3,
+    "active_chargers": 2,
+    "total_transactions": 15
+  },
+  "chargers": [...],
+  "system_info": {...}
+}
 
-## 🚀 Development
+### Charger Actions
 
-### Development Mode
-```bash
-npm run dev
-```
-Uses nodemon for automatic server restart on file changes.
+#### POST /api/chargers/:id/action
+Executes actions on a specific charger.
 
-### Static File Serving
-```bash
-npm run serve
-```
-Uses http-server for static file serving (without proxy).
+Available actions:
+- turn_on - Activates charger and schedules transactions
+- turn_off - Deactivates charger
+- restart - Restarts (off for 3s, then on)
+- create_ticket - Creates simulated support ticket
+- pay_costs - Pays operational costs (40% of balance)
+- send_to_owner - Transfers funds to owner
 
-## 🔧 Troubleshooting
+{
+  "action": "turn_on"
+}
 
-### CORS Issues
-If you encounter CORS errors, make sure you're using the Express server (`npm start`) instead of the static server.
+### Transaction Simulation
 
-### API Connection
-Check the server console for proxy logs. The server automatically proxies all `/api/*` requests to the Dobi API.
+#### POST /api/chargers/:id/simulate_transaction
+Simulates a manual transaction.
 
-### Port Conflicts
-If port 3001 is busy, change the PORT environment variable:
-```bash
-PORT=3002 npm start
-```
+{
+  "amount_eth": 0.001
+}
 
-## 📱 Browser Support
+### Logs and Monitoring
 
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
+#### GET /api/logs
+Gets system logs with filtering options.
 
-## 🤝 Contributing
+Query parameters:
+- include_blockchain=true/false - Include blockchain transactions
+- charger_id=ID - Filter by specific charger
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+#### POST /api/logs
+Creates manual log entry (requires API Key).
+{
+  "charger_id": "CHARGER_001",
+  "message": "Manual maintenance completed",
+  "transactions": 5,
+  "income_generated": 50.25,
+  "cost_generated": 20.10,
+  "balance_total": 30.15
+}
 
-## 📄 License
+## Operation Modes
 
-MIT License - see LICENSE file for details.
+### Simulation Mode (Recommended for development)
 
-## 🔗 Links
+END_ONCHAIN=false
+- Simulates all blockchain transactions
+- Doesn't spend real ETH
+- Perfect for development and testing
+- Maintains all economic logic
 
-- **Dobi Protocol**: https://dobi.guru
-- **API Documentation**: https://api-aleph.dobi.guru
-- **Repository**: https://github.com/Matias-QR/dobi
+###
+nomic logic
 
-## 📞 Support
+### Real Blockchain Mode (Production)
 
-For support or questions:
-- Create an issue in this repository
-- Contact the Dobi Protocol team
-- Check the API documentation
+SEND_ONCHAIN=true
+- Executes real transactions on Base Mainnet
+- Requires real ETH in master wallet
+- For production use only
+- WARNING! - Spends real ETH
+
+## Automatic Simulation
+
+### How It Works
+- Active chargers generate 0-4 daily transactions
+- Random times between 8 AM - 10 PM
+- Amounts between MIN_TX_ETH and MAX_TX_ETH
+- Automatic costs = 40% of income
+
+### Scheduling
+- Scheduled when creating active chargers
+- Scheduled when activating chargers
+- Scheduled when restarting chargers
+- Daily reset at midnight
+
+## Testing
+
+### Automated Script
+
+# Run complete tests
+node test.js
+
+# Tests with detailed information
+VERBOSE=1 node test.js
+
+### Postman Collection
+Import the included Postman collection for interactive manual testing.
+
+### Included Tests
+- Charger creation and management
+- All available actions
+- Transaction simulation
+- Log and blockchain queries
+- Error handling
+- Security validation
+
+## Security Considerations
+
+### CRITICAL - Never commit:
+- .env file (contains private keys)
+- chargers.db database (contains wallets)
+- .wallet files or similar
+- Production configurations
+
+### Recommendations:
+1. Change MASTER_PRIVATE_KEY before production
+2. Use a unique and secure API_KEY
+3. Never expose private keys in logs or responses
+4. Use HTTPS in production
+5. Limit access to sensitive endpoints
+
+## Troubleshooting
+
+### Server won't start
+
+# Check dependencies
+npm install
+
+# Check .env file
+cat .env
+
+# Check available port
+lsof -i :6139
+
+### Blockchain errors
+
+# Check RPC connectivity
+curl -X POST -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+  https://mainnet.base.org
+
+# Check master wallet balance
+# (use blockchain tools or explorers)
+
+### Corrupted database
+
+# Delete and recreate DB
+rm chargers.db
+node server.js  # Auto-recreated
+
+## Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| PORT | Server port | 6139 | No |
+| BASE_RPC | Base RPC URL | https://mainnet.base.org | Yes |
+| SEND_ONCHAIN | Real transactions | false | No |
+| MASTER_PRIVATE_KEY | Master wallet key | - | Yes |
+| MIN_TX_ETH | Min ETH per tx | 0.0001 | No |
+| MAX_TX_ETH | Max ETH per tx | 0.0002 | No |
+| API_KEY | API key for logs | - | Yes |
+
+## Architecture
+
+### Main Components
+- Express Server - REST API
+- SQLite Database - Data persistence
+- Ethers.js - Blockchain integration
+- Scheduler - Automatic transaction system
+
+### Data Flow
+1. Charger created → Unique wallet generated
+2. If active → Transactions automatically scheduled
+3. Transactions → Update DB and blockchain (optional)
+4. Logs → Record all activity
+5. Daily reset → New scheduling
+
+## Development
+
+### Data Structure
+
+#### chargers table
+
+CREATE TABLE chargers (
+  id_charger TEXT PRIMARY KEY,
+  owner_address TEXT,
+  wallet_address TEXT,
+  wallet_privateKey TEXT,
+  status TEXT,
+  transactions INTEGER,
+  income_generated REAL,
+  cost_generated REAL,
+  balance_total REAL
+);
+
+#### logs table
+
+CREATE TABLE logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  charger_id TEXT,
+  message TEXT,
+  timestamp TEXT,
+  transactions INTEGER,
+  income_generated REAL,
+  cost_generated REAL,
+  balance_total REAL
+);
+
+### Future Improvements
+- [ ] Real-time web dashboard
+- [ ] Integration with specialized blockchain APIs
+- [ ] Alert and notification system
+- [ ] Advanced metrics and analytics
+- [ ] User authentication
+- [ ] Advanced rate limiting
+
+## Support and Contributing
+
+### Reporting Issues
+1. Check that the issue isn't in the logs
+2. Include environment information (.env without keys)
+3. Provide steps to reproduce the problem
+
+### Local Development
+
+# Development mode with auto-restart
+npm install -g nodemon
+nodemon server.js
+
+# Detailed logs
+DEBUG=* node server.js
+
+## License
+
+[Specify your license here]
+
+## Author
+
+[Your contact information]
 
 ---
 
-**Made with ❤️ by the Dobi Protocol Team**
+Warning: This system handles private keys and blockchain transactions. Always use simulation mode during development and take all necessary security precautions in production.
