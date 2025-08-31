@@ -1,0 +1,45 @@
+{
+  "name": "dobi-protocol-frontend",
+  "version": "1.0.0",
+  "description": "Frontend interface for Dobi Protocol Web3 IoT platform",
+  "main": "public/index.html",
+  "scripts": {
+    "start": "npx http-server public -p 3000 -o",
+    "dev": "npx live-server public --port=3000 --open=/",
+    "build": "echo 'Frontend is already built - no build step needed'",
+    "test": "echo 'No tests configured yet'",
+    "lint": "echo 'No linter configured yet'"
+  },
+  "keywords": [
+    "web3",
+    "iot",
+    "blockchain",
+    "ethereum",
+    "metamask",
+    "frontend",
+    "vanilla-js"
+  ],
+  "author": "Dobi Protocol Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Matias-QR/dobi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Matias-QR/dobi/issues"
+  },
+  "homepage": "https://github.com/Matias-QR/dobi#readme",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
