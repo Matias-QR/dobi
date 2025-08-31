@@ -132,32 +132,34 @@ export class DobiDevices {
 
     async createDevice(deviceData) {
         try {
-            // Validate device data
-            this.validateDeviceData(deviceData);
+            console.log('🔌 Creating new charger with data:', deviceData);
             
-            // Generate device ID and address
-            const newDevice = {
-                id: this.generateDeviceId(),
-                address: this.generateDeviceAddress(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                status: 'active',
-                ...deviceData
-            };
-
-            // Add to devices array
-            this.devices.unshift(newDevice);
+            // Use the charger service to create the charger via API
+            const createResult = await chargerService.createCharger(deviceData);
             
-            // Update UI
-            this.updateDevicesUI();
-            this.updateRecentDevicesUI();
-            
-            // Emit device created event
-            this.emitEvent('device:created', newDevice);
-            
-            console.log('📱 Device created:', newDevice);
-            
-            return newDevice;
+            if (createResult.success) {
+                console.log('✅ Charger created via API:', createResult.data);
+                
+                // Transform the API response to device format
+                const newDevice = chargerService.transformChargerToDevice(createResult.data);
+                
+                // Add to devices array
+                this.devices.unshift(newDevice);
+                
+                // Update UI
+                this.updateDevicesUI();
+                this.updateRecentDevicesUI();
+                
+                // Emit device created event
+                this.emitEvent('device:created', newDevice);
+                
+                console.log('📱 Device created and added to UI:', newDevice);
+                
+                return newDevice;
+                
+            } else {
+                throw new Error(createResult.error || 'Failed to create charger via API');
+            }
             
         } catch (error) {
             console.error('❌ Failed to create device:', error);
@@ -487,7 +489,7 @@ export class DobiDevices {
 
     // Utility methods
     validateDeviceData(deviceData) {
-        const required = ['name', 'description', 'monitoringEndpoint', 'actionEndpoint'];
+        const required = ['id_charger', 'owner_address', 'description', 'location', 'power'];
         
         for (const field of required) {
             if (!deviceData[field] || deviceData[field].trim() === '') {
@@ -495,12 +497,14 @@ export class DobiDevices {
             }
         }
 
-        // Validate URLs
-        try {
-            new URL(deviceData.monitoringEndpoint);
-            new URL(deviceData.actionEndpoint);
-        } catch (error) {
-            throw new Error('Invalid URL format for endpoints');
+        // Validate power is a positive number
+        if (isNaN(deviceData.power) || deviceData.power <= 0) {
+            throw new Error('Power must be a positive number');
+        }
+
+        // Validate battery level if provided
+        if (deviceData.battery !== undefined && (isNaN(deviceData.battery) || deviceData.battery < 0 || deviceData.battery > 100)) {
+            throw new Error('Battery level must be between 0 and 100');
         }
     }
 
