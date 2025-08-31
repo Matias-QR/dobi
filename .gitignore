@@ -1,0 +1,92 @@
+# Node.js y dependencias (ElizaOS)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Archivos de entorno y configuración
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+config.json
+secrets.json
+
+# ElizaOS específicos
+.eliza/
+eliza-data/
+characters/*.json
+!characters/default.json
+logs/
+*.log
+
+# Archivos de build y distribución
+dist/
+build/
+out/
+public/js/bundle.js
+public/css/bundle.css
+
+# Archivos del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-workspace
+.sublime-project
+
+# Archivos temporales
+tmp/
+temp/
+.tmp/
+
+# Caché de herramientas
+.cache/
+.parcel-cache/
+.sass-cache/
+
+# Archivos minificados (si se generan automáticamente)
+*.min.js
+*.min.css
+!vendor/*.min.js
+!vendor/*.min.css
+
+# Source maps (si no los necesitas en producción)
+*.map
+
+# Archivos de testing
+coverage/
+.nyc_output/
+test-results/
+
+# Archivos de respaldo
+*.bak
+*.backup
+*.orig
+
+# Certificados y claves
+*.pem
+*.key
+*.crt
+*.p12
+
+# Base de datos local
+*.sqlite
+*.sqlite3
+*.db
