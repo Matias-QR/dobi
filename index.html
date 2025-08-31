@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dobi Protocol - IoT Web3 Interface</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/forms.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-cube"></i>
+                <span>Dobi Protocol</span>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn" id="nav-home">Home</button>
+                <button class="nav-btn" id="nav-devices">Devices</button>
+                <button class="nav-btn" id="nav-transactions">Transactions</button>
+            </div>
+            <div class="nav-auth">
+                <button class="btn btn-primary" id="connect-wallet">
+                    <i class="fas fa-wallet"></i>
+                    Connect Wallet
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <div id="home-page" class="page active">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h1>Welcome to Dobi Protocol</h1>
+                    <p>Connect your IoT devices to the blockchain with ease</p>
+                    <div class="hero-buttons">
+                        <button class="btn btn-primary btn-large" id="hero-create-btn">
+                            <i class="fas fa-plus"></i>
+                            Create New Dobi device
+                        </button>
+                        <button class="btn btn-secondary btn-large" id="hero-devices-btn">
+                            <i class="fas fa-list"></i>
+                            View All Devices
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Section -->
+            <section class="stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-cube"></i>
+                        <h3>Total Devices</h3>
+                        <p id="total-devices">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-network-wired"></i>
+                        <h3>Active Connections</h3>
+                        <p id="active-connections">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-coins"></i>
+                        <h3>Total Transactions</h3>
+                        <p id="total-transactions">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-wallet"></i>
+                        <h3>Wallet Balance</h3>
+                        <p id="wallet-balance">0 ETH</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Devices Section -->
+            <section class="recent-section">
+                <h2>Dispositivos Recientes</h2>
+                <div id="recent-devices" class="devices-grid">
+                    <!-- Recent devices will be loaded here -->
+                </div>
+                <div class="recent-actions">
+                    <button class="btn btn-primary" id="recent-create-btn">
+                        <i class="fas fa-plus"></i>
+                        Crear Primero
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Devices Page -->
+        <div id="devices-page" class="page">
+            <div class="page-header">
+                <h2>All Devices</h2>
+                <button class="btn btn-primary" id="devices-create-btn">
+                    <i class="fas fa-plus"></i>
+                    Create New Device
+                </button>
+            </div>
+            <div id="devices-list" class="devices-grid">
+                <!-- All devices will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Create Device Page -->
+        <div id="create-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-secondary" id="create-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver
+                </button>
+                <h2>Create New Dobi Device</h2>
+            </div>
+            <form id="create-device-form" class="device-form">
+                <div class="form-group">
+                    <label for="device-name">Device Name</label>
+                    <input type="text" id="device-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="device-description">Description</label>
+                    <textarea id="device-description" name="description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="device-photo">Device Photo URL</label>
+                    <input type="url" id="device-photo" name="photo" placeholder="https://example.com/photo.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="monitoring-endpoint">Monitoring Endpoint</label>
+                    <input type="url" id="monitoring-endpoint" name="monitoringEndpoint" required>
+                </div>
+                <div class="form-group">
+                    <label for="action-endpoint">Action Endpoint</label>
+                    <input type="url" id="action-endpoint" name="actionEndpoint" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Create Device
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Transactions Page -->
+        <div id="transactions-page" class="page">
+            <div class="page-header">
+                <button class="btn btn-secondary" id="transactions-back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver
+                </button>
+                <h2>Recent Transactions</h2>
+            </div>
+            <div id="transactions-list" class="transactions-list">
+                <!-- Transactions will be loaded here -->
+            </div>
+            <div class="load-more">
+                <button class="btn btn-secondary" id="load-more-transactions">
+                    <i class="fas fa-sync"></i>
+                    Load More
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Device Detail Modal -->
+    <div id="device-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-device-name">Device Name</h3>
+                <button class="modal-close" id="modal-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="device-detail">
+                    <div class="device-photo">
+                        <img id="modal-device-photo" src="" alt="Device Photo">
+                    </div>
+                    <div class="device-info">
+                        <p id="modal-device-description">Device description</p>
+                        <div class="device-endpoints">
+                            <div class="endpoint">
+                                <strong>Monitoring:</strong>
+                                <span id="modal-monitoring-endpoint"></span>
+                            </div>
+                            <div class="endpoint">
+                                <strong>Actions:</strong>
+                                <span id="modal-action-endpoint"></span>
+                            </div>
+                        </div>
+                        <div class="device-address">
+                            <strong>Address:</strong>
+                            <span id="modal-device-address"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
