@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "dev": "nodemon dobi-api/index.js"
+  },
   "dependencies": {
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
