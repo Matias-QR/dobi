@@ -1,340 +1,450 @@
 // UI Management Module for Dobi Protocol
-class DobiUI {
+export class DobiUI {
     constructor() {
         this.currentPage = 'home';
-        this.isMobileMenuOpen = false;
-        
-        this.init();
+        this.isLoading = false;
+        this.toastTimeout = null;
     }
-    
+
     init() {
-        this.setupEventListeners();
-        this.setupMobileNavigation();
-        this.setupKeyboardNavigation();
-    }
-    
-    setupEventListeners() {
-        // Navigation links
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = link.getAttribute('data-page');
-                this.navigateToPage(page);
-            });
-        });
-        
-        // Mobile navigation toggle
-        const navToggle = document.getElementById('nav-toggle');
-        if (navToggle) {
-            navToggle.addEventListener('click', () => this.toggleMobileMenu());
+        try {
+            // Set up event listeners
+            this.setupEventListeners();
+            
+            // Set up keyboard navigation
+            this.setupKeyboardNavigation();
+            
+            // Initialize navigation
+            this.updateNavigationUI();
+            
+            console.log('🎨 UI module initialized');
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize UI:', error);
         }
-        
+    }
+
+    setupEventListeners() {
+        // Navigation buttons
+        const navHome = document.getElementById('nav-home');
+        const navDevices = document.getElementById('nav-devices');
+        const navTransactions = document.getElementById('nav-transactions');
+
+        if (navHome) navHome.addEventListener('click', () => this.navigateToPage('home'));
+        if (navDevices) navDevices.addEventListener('click', () => this.navigateToPage('devices'));
+        if (navTransactions) navTransactions.addEventListener('click', () => this.navigateToPage('transactions'));
+
         // Hero section buttons
         const heroCreateBtn = document.getElementById('hero-create-btn');
-        if (heroCreateBtn) {
-            heroCreateBtn.addEventListener('click', () => this.navigateToPage('create'));
-        }
-        
         const heroDevicesBtn = document.getElementById('hero-devices-btn');
-        if (heroDevicesBtn) {
-            heroDevicesBtn.addEventListener('click', () => this.navigateToPage('devices'));
-        }
-        
-        // Page navigation buttons
+
+        if (heroCreateBtn) heroCreateBtn.addEventListener('click', () => this.navigateToPage('create'));
+        if (heroDevicesBtn) heroDevicesBtn.addEventListener('click', () => this.navigateToPage('devices'));
+
+        // Recent devices section
+        const recentCreateBtn = document.getElementById('recent-create-btn');
+        if (recentCreateBtn) recentCreateBtn.addEventListener('click', () => this.navigateToPage('create'));
+
+        // Devices page
         const devicesCreateBtn = document.getElementById('devices-create-btn');
-        if (devicesCreateBtn) {
-            devicesCreateBtn.addEventListener('click', () => this.navigateToPage('create'));
-        }
-        
+        if (devicesCreateBtn) devicesCreateBtn.addEventListener('click', () => this.navigateToPage('create'));
+
+        // Create page
         const createBackBtn = document.getElementById('create-back-btn');
-        if (createBackBtn) {
-            createBackBtn.addEventListener('click', () => this.navigateToPage('devices'));
-        }
-        
+        if (createBackBtn) createBackBtn.addEventListener('click', () => this.navigateToPage('home'));
+
+        // Transactions page
         const transactionsBackBtn = document.getElementById('transactions-back-btn');
-        if (transactionsBackBtn) {
-            transactionsBackBtn.addEventListener('click', () => this.navigateToPage('home'));
-        }
-        
+        if (transactionsBackBtn) transactionsBackBtn.addEventListener('click', () => this.navigateToPage('home'));
+
         // Modal close button
         const modalCloseBtn = document.getElementById('modal-close-btn');
-        if (modalCloseBtn) {
-            modalCloseBtn.addEventListener('click', () => this.closeDeviceModal());
+        if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => this.closeDeviceModal());
+
+        // Load more transactions
+        const loadMoreBtn = document.getElementById('load-more-transactions');
+        if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => this.loadMoreTransactions());
+
+        // Device form submission
+        const createDeviceForm = document.getElementById('create-device-form');
+        if (createDeviceForm) {
+            createDeviceForm.addEventListener('submit', (e) => this.handleCreateDevice(e));
         }
-        
-        // Close modal when clicking outside
+
+        // Empty state button clicks (event delegation)
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                this.hideModal(e.target.id);
-            }
-        });
-        
-        // Close modal with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeAllModals();
-            }
-        });
-    }
-    
-    setupMobileNavigation() {
-        // Close mobile menu when clicking on a link
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                this.closeMobileMenu();
-            });
-        });
-    }
-    
-    setupKeyboardNavigation() {
-        // Keyboard navigation support
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + K to focus search (if implemented)
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                // Focus search input if exists
-                const searchInput = document.querySelector('input[type="search"]');
-                if (searchInput) {
-                    searchInput.focus();
+            const target = e.target.closest('.empty-state-btn');
+            if (target) {
+                const page = target.getAttribute('data-page');
+                if (page) {
+                    this.navigateToPage(page);
                 }
             }
         });
     }
-    
-    navigateToPage(pageName) {
-        // Hide all pages
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
-        
-        // Show target page
-        const targetPage = document.getElementById(`${pageName}-page`);
-        if (targetPage) {
-            targetPage.classList.add('active');
-        }
-        
-        // Update navigation links
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('data-page') === pageName) {
-                link.classList.add('active');
+
+    setupKeyboardNavigation() {
+        // ESC key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeDeviceModal();
             }
         });
-        
-        // Update current page
-        this.currentPage = pageName;
-        
-        // Update browser history
-        this.updateBrowserHistory(pageName);
-        
-        // Close mobile menu if open
-        if (this.isMobileMenuOpen) {
-            this.closeMobileMenu();
-        }
-        
-        // Emit page change event
-        this.emitPageChangeEvent(pageName);
-    }
-    
-    updateBrowserHistory(pageName) {
-        const url = new URL(window.location);
-        url.hash = `#${pageName}`;
-        window.history.pushState({ page: pageName }, '', url);
-    }
-    
-    toggleMobileMenu() {
-        const navMenu = document.querySelector('.nav-menu');
-        if (navMenu) {
-            this.isMobileMenuOpen = !this.isMobileMenuOpen;
-            navMenu.classList.toggle('active', this.isMobileMenuOpen);
-        }
-    }
-    
-    closeMobileMenu() {
-        const navMenu = document.querySelector('.nav-menu');
-        if (navMenu) {
-            this.isMobileMenuOpen = false;
-            navMenu.classList.remove('active');
-        }
-    }
-    
-    showModal(modalId, content = '') {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            // Set content if provided
-            if (content && modal.querySelector('.modal-body')) {
-                modal.querySelector('.modal-body').innerHTML = content;
+
+        // Arrow keys for navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey) {
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.navigateBack();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        this.navigateForward();
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        this.navigateToPage('home');
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        this.navigateToPage('devices');
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        this.navigateToPage('transactions');
+                        break;
+                }
             }
-            
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
+        });
+    }
+
+    navigateToPage(pageName) {
+        try {
+            // Hide all pages
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+
+            // Show target page
+            const targetPage = document.getElementById(`${pageName}-page`);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                this.currentPage = pageName;
+            } else {
+                console.warn('⚠️ Page not found:', pageName);
+                return;
+            }
+
+            // Update navigation UI
+            this.updateNavigationUI();
+
+            // Emit page change event
+            this.emitEvent('page:changed', { page: pageName });
+
+            console.log('📄 Navigated to:', pageName);
+
+        } catch (error) {
+            console.error('❌ Navigation failed:', error);
         }
     }
-    
-    hideModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
+
+    navigateBack() {
+        const pageHistory = ['home', 'devices', 'transactions', 'create'];
+        const currentIndex = pageHistory.indexOf(this.currentPage);
+        
+        if (currentIndex > 0) {
+            const previousPage = pageHistory[currentIndex - 1];
+            this.navigateToPage(previousPage);
         }
     }
-    
+
+    navigateForward() {
+        const pageHistory = ['home', 'devices', 'transactions', 'create'];
+        const currentIndex = pageHistory.indexOf(this.currentPage);
+        
+        if (currentIndex < pageHistory.length - 1) {
+            const nextPage = pageHistory[currentIndex + 1];
+            this.navigateToPage(nextPage);
+        }
+    }
+
+    updateNavigationUI() {
+        // Update active navigation button
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.id === `nav-${this.currentPage}`) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
     closeDeviceModal() {
         const modal = document.getElementById('device-modal');
         if (modal) {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
+            modal.classList.remove('active');
         }
     }
-    
-    closeAllModals() {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            modal.classList.add('hidden');
-        });
-        document.body.style.overflow = '';
+
+    openDeviceModal(deviceData) {
+        try {
+            const modal = document.getElementById('device-modal');
+            if (!modal) return;
+
+            // Populate modal with device data
+            const nameElement = document.getElementById('modal-device-name');
+            const photoElement = document.getElementById('modal-device-photo');
+            const descriptionElement = document.getElementById('modal-device-description');
+            const monitoringElement = document.getElementById('modal-monitoring-endpoint');
+            const actionElement = document.getElementById('modal-action-endpoint');
+            const addressElement = document.getElementById('modal-device-address');
+
+            if (nameElement) nameElement.textContent = deviceData.name;
+            if (photoElement) {
+                if (deviceData.photo) {
+                    photoElement.src = deviceData.photo;
+                    photoElement.style.display = 'block';
+                } else {
+                    photoElement.style.display = 'none';
+                }
+            }
+            if (descriptionElement) descriptionElement.textContent = deviceData.description;
+            if (monitoringElement) monitoringElement.textContent = deviceData.monitoringEndpoint;
+            if (actionElement) actionElement.textContent = deviceData.actionEndpoint;
+            if (addressElement) addressElement.textContent = deviceData.address;
+
+            // Show modal
+            modal.classList.add('active');
+
+        } catch (error) {
+            console.error('❌ Failed to open device modal:', error);
+        }
     }
-    
-    showLoading(message = 'Loading...', maxDuration = 30000) {
-        const spinner = document.getElementById('loading-spinner');
-        if (spinner) {
-            const messageEl = spinner.querySelector('p');
-            if (messageEl) messageEl.textContent = message;
-            spinner.classList.remove('hidden');
-            
-            // Auto-hide after max duration to prevent infinite loading
+
+    async handleCreateDevice(e) {
+        e.preventDefault();
+        
+        try {
+            const formData = new FormData(e.target);
+            const deviceData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                photo: formData.get('photo') || null,
+                monitoringEndpoint: formData.get('monitoringEndpoint'),
+                actionEndpoint: formData.get('actionEndpoint'),
+                address: '0x' + Math.random().toString(16).substr(2, 40), // Mock address
+                createdAt: new Date().toISOString()
+            };
+
+            // Show loading
+            this.showLoading('Creating device...');
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Emit device created event
+            this.emitEvent('device:created', deviceData);
+
+            // Show success message
+            this.showSuccess('Device created successfully!');
+
+            // Navigate back to devices page
+            this.navigateToPage('devices');
+
+            // Reset form
+            e.target.reset();
+
+        } catch (error) {
+            console.error('❌ Failed to create device:', error);
+            this.showError('Failed to create device: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async loadMoreTransactions() {
+        try {
+            // Show loading
+            this.showLoading('Loading more transactions...');
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Emit load more event
+            this.emitEvent('transactions:loadMore', {});
+
+            // Show success message
+            this.showSuccess('More transactions loaded!');
+
+        } catch (error) {
+            console.error('❌ Failed to load more transactions:', error);
+            this.showError('Failed to load more transactions: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // Loading spinner
+    showLoading(message = 'Loading...', maxDuration = 10000) {
+        try {
+            this.isLoading = true;
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) {
+                const messageElement = spinner.querySelector('p');
+                if (messageElement) messageElement.textContent = message;
+                spinner.classList.remove('hidden');
+            }
+
+            // Auto-hide after max duration
             if (maxDuration > 0) {
                 setTimeout(() => {
-                    if (spinner && !spinner.classList.contains('hidden')) {
+                    if (this.isLoading) {
                         this.hideLoading();
                     }
                 }, maxDuration);
             }
+
+        } catch (error) {
+            console.error('❌ Failed to show loading:', error);
         }
     }
-    
+
     hideLoading() {
-        const spinner = document.getElementById('loading-spinner');
-        if (spinner) {
-            spinner.classList.add('hidden');
+        try {
+            this.isLoading = false;
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) {
+                spinner.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('❌ Failed to hide loading:', error);
         }
     }
-    
-    showToast(type, title, message, duration = 5000) {
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `
-            <div class="toast-header">
-                <span class="toast-title">${title}</span>
+
+    // Toast notifications
+    showToast(type, title, message, duration = null) {
+        try {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            // Set default duration based on type
+            if (!duration) {
+                switch (type) {
+                    case 'error': duration = 8000; break;
+                    case 'warning': duration = 6000; break;
+                    case 'success': duration = 5000; break;
+                    case 'info': duration = 5000; break;
+                    default: duration = 5000;
+                }
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas fa-${this.getToastIcon(type)}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
                 <button class="toast-close">
                     <i class="fas fa-times"></i>
                 </button>
-            </div>
-            <div class="toast-message">${message}</div>
-            <div class="toast-progress"></div>
-        `;
-        
-        // Add event listener to close button
-        const closeBtn = toast.querySelector('.toast-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                this.hideToast(toast);
-            });
-        }
-        
-        const container = document.getElementById('toast-container');
-        if (container) {
+                <div class="toast-progress"></div>
+            `;
+
+            // Add close functionality
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => this.hideToast(toast));
+
+            // Add to container
             container.appendChild(toast);
-            
-            // Animate progress bar
-            const progressBar = toast.querySelector('.toast-progress');
-            if (progressBar) {
-                progressBar.style.width = '100%';
-                progressBar.style.transition = `width ${duration}ms linear`;
-                setTimeout(() => {
-                    progressBar.style.width = '0%';
-                }, 100);
-            }
-            
-            // Auto-hide after specified duration
+
+            // Auto-hide after duration
             setTimeout(() => {
                 this.hideToast(toast);
             }, duration);
+
+            // Store reference for manual hiding
+            this.toastTimeout = toast;
+
+        } catch (error) {
+            console.error('❌ Failed to show toast:', error);
         }
     }
-    
+
     hideToast(toast) {
-        if (toast && toast.parentElement) {
-            toast.classList.add('toast-hiding');
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
-                }
-            }, 300); // Wait for fade out animation
+        try {
+            if (toast) {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+        } catch (error) {
+            console.error('❌ Failed to hide toast:', error);
         }
     }
-    
-    // Convenience methods for different toast types
-    showSuccess(title, message) {
+
+    getToastIcon(type) {
+        switch (type) {
+            case 'success': return 'check-circle';
+            case 'error': return 'exclamation-circle';
+            case 'warning': return 'exclamation-triangle';
+            case 'info': return 'info-circle';
+            default: return 'info-circle';
+        }
+    }
+
+    // Convenience methods
+    showSuccess(title, message = '') {
         this.showToast('success', title, message);
     }
-    
-    showError(title, message) {
-        this.showToast('error', title, message, 8000); // Errors stay longer
+
+    showError(title, message = '') {
+        this.showToast('error', title, message);
     }
-    
-    showWarning(title, message) {
-        this.showToast('warning', title, message, 6000); // Warnings stay medium
+
+    showWarning(title, message = '') {
+        this.showToast('warning', title, message);
     }
-    
-    showInfo(title, message) {
+
+    showInfo(title, message = '') {
         this.showToast('info', title, message);
     }
-    
-    emitPageChangeEvent(pageName) {
-        const event = new CustomEvent('dobi:page:changed', {
-            detail: {
-                page: pageName,
-                previousPage: this.currentPage
-            }
-        });
-        
-        window.dispatchEvent(event);
+
+    // Event emission
+    emitEvent(eventName, data) {
+        const event = new CustomEvent(eventName, { detail: data });
+        document.dispatchEvent(event);
     }
-    
-    // Get current page
+
+    // Public methods
     getCurrentPage() {
         return this.currentPage;
     }
-    
-    // Check if mobile menu is open
-    isMobileMenuOpen() {
-        return this.isMobileMenuOpen;
+
+    updateUI() {
+        this.updateNavigationUI();
     }
-    
-    // Utility method to check if element is visible
-    isElementVisible(element) {
-        if (!element) return false;
-        
-        const rect = element.getBoundingClientRect();
-        return rect.top >= 0 && rect.left >= 0 && 
-               rect.bottom <= window.innerHeight && 
-               rect.right <= window.innerWidth;
+
+    updateAuthUI(userData) {
+        // Update UI based on authentication status
+        if (userData) {
+            // User is authenticated
+            this.showSuccess('Wallet connected successfully!');
+        } else {
+            // User is not authenticated
+            this.showInfo('Please connect your wallet to continue');
+        }
     }
-    
-    // Scroll to element with smooth animation
-    scrollToElement(element, offset = 0) {
-        if (!element) return;
-        
-        const elementPosition = element.offsetTop - offset;
-        window.scrollTo({
-            top: elementPosition,
-            behavior: 'smooth'
-        });
+
+    updateNetworkUI(networkData) {
+        // Update network indicator if needed
+        console.log('🌐 Network UI updated:', networkData);
     }
 }
-
-// Export for use in other modules
-window.DobiUI = DobiUI;

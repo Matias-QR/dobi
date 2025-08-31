@@ -1,193 +1,345 @@
-// Web3 Integration for Dobi Protocol
-class DobiWeb3 {
+// Web3 Integration Module for Dobi Protocol
+export class DobiWeb3 {
     constructor() {
         this.provider = null;
         this.signer = null;
         this.account = null;
-        this.chainId = null;
+        this.network = null;
         this.isConnected = false;
-        
-        this.setupEventListeners();
+        this.ethers = null;
     }
-    
+
+    async init() {
+        try {
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('🔗 MetaMask detected');
+                this.provider = window.ethereum;
+                
+                // Try to load ethers.js dynamically
+                try {
+                    // For now, we'll use a mock implementation
+                    // In production, you would import ethers properly
+                    this.setupMockEthers();
+                } catch (error) {
+                    console.warn('⚠️ Ethers.js not available, using mock implementation');
+                    this.setupMockEthers();
+                }
+                
+                // Set up event listeners
+                this.setupEventListeners();
+                
+                // Check if already connected
+                const accounts = await this.provider.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    await this.handleAccountsChanged(accounts);
+                }
+                
+            } else {
+                console.warn('⚠️ MetaMask not detected');
+                this.setupMockEthers();
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize Web3:', error);
+            this.setupMockEthers();
+        }
+    }
+
+    setupMockEthers() {
+        // Mock ethers implementation for development
+        this.ethers = {
+            providers: {
+                Web3Provider: class MockWeb3Provider {
+                    constructor(provider) {
+                        this.provider = provider;
+                    }
+                    
+                    async getSigner() {
+                        return {
+                            getAddress: () => '0x1234567890123456789012345678901234567890',
+                            signMessage: async (message) => '0x' + '0'.repeat(130) + '1',
+                            connect: async () => this
+                        };
+                    }
+                }
+            },
+            utils: {
+                formatEther: (wei) => (parseInt(wei) / 1e18).toFixed(4),
+                parseEther: (ether) => (parseFloat(ether) * 1e18).toString(),
+                formatAddress: (address) => `${address.slice(0, 6)}...${address.slice(-4)}`
+            }
+        };
+    }
+
     setupEventListeners() {
-        // Listen for account changes
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', (accounts) => {
+        if (this.provider) {
+            this.provider.on('accountsChanged', (accounts) => {
                 this.handleAccountsChanged(accounts);
             });
-            
-            window.ethereum.on('chainChanged', (chainId) => {
+
+            this.provider.on('chainChanged', (chainId) => {
                 this.handleChainChanged(chainId);
+            });
+
+            this.provider.on('disconnect', () => {
+                this.handleDisconnect();
             });
         }
     }
-    
+
     async connectWallet() {
         try {
-            if (!window.ethereum) {
-                throw new Error('MetaMask no está instalado');
+            if (!this.provider) {
+                throw new Error('No Web3 provider available');
             }
-            
+
             // Request account access
-            const accounts = await window.ethereum.request({
+            const accounts = await this.provider.request({
                 method: 'eth_requestAccounts'
             });
-            
-            if (accounts.length === 0) {
-                throw new Error('No se encontraron cuentas');
+
+            if (accounts.length > 0) {
+                await this.handleAccountsChanged(accounts);
+                return true;
+            } else {
+                throw new Error('No accounts found');
             }
-            
-            this.account = accounts[0];
-            this.provider = new ethers.providers.Web3Provider(window.ethereum);
-            this.signer = this.provider.getSigner();
-            this.chainId = await this.provider.getNetwork();
-            this.isConnected = true;
-            
-            this.updateUI();
-            return this.account;
-            
+
         } catch (error) {
-            console.error('Error connecting wallet:', error);
+            console.error('❌ Failed to connect wallet:', error);
             throw error;
         }
     }
-    
+
     async disconnectWallet() {
-        this.provider = null;
-        this.signer = null;
-        this.account = null;
-        this.chainId = null;
-        this.isConnected = false;
-        
-        this.updateUI();
-    }
-    
-    handleAccountsChanged(accounts) {
-        if (accounts.length === 0) {
-            // User disconnected wallet
-            this.disconnectWallet();
-        } else if (accounts[0] !== this.account) {
-            // User switched accounts
-            this.account = accounts[0];
-            this.updateUI();
+        try {
+            this.account = null;
+            this.network = null;
+            this.isConnected = false;
+            this.signer = null;
+
+            // Emit disconnect event
+            this.emitEvent('web3:disconnected', {});
+            
+            console.log('🔓 Wallet disconnected');
+            
+        } catch (error) {
+            console.error('❌ Failed to disconnect wallet:', error);
         }
     }
-    
-    handleChainChanged(chainId) {
-        this.chainId = chainId;
-        this.updateUI();
-        
-        // Reload page on chain change (recommended by MetaMask)
-        window.location.reload();
+
+    async handleAccountsChanged(accounts) {
+        try {
+            if (accounts.length === 0) {
+                // User disconnected
+                await this.disconnectWallet();
+                return;
+            }
+
+            const newAccount = accounts[0];
+            
+            if (this.account !== newAccount) {
+                this.account = newAccount;
+                
+                // Get network info
+                const chainId = await this.provider.request({ method: 'eth_chainId' });
+                this.network = await this.getNetworkInfo(chainId);
+                
+                // Get signer
+                if (this.ethers && this.ethers.providers.Web3Provider) {
+                    const web3Provider = new this.ethers.providers.Web3Provider(this.provider);
+                    this.signer = await web3Provider.getSigner();
+                }
+                
+                this.isConnected = true;
+                
+                // Emit account change event
+                this.emitEvent('web3:accountChanged', {
+                    account: this.account,
+                    network: this.network
+                });
+                
+                console.log('👛 Account changed:', this.account);
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to handle account change:', error);
+        }
     }
-    
+
+    async handleChainChanged(chainId) {
+        try {
+            this.network = await this.getNetworkInfo(chainId);
+            
+            // Emit network change event
+            this.emitEvent('web3:networkChanged', {
+                network: this.network
+            });
+            
+            console.log('🌐 Network changed:', this.network);
+            
+        } catch (error) {
+            console.error('❌ Failed to handle chain change:', error);
+        }
+    }
+
+    async handleDisconnect() {
+        try {
+            await this.disconnectWallet();
+        } catch (error) {
+            console.error('❌ Failed to handle disconnect:', error);
+        }
+    }
+
+    async getNetworkInfo(chainId) {
+        const networks = {
+            '0x1': { name: 'Ethereum Mainnet', chainId: 1, currency: 'ETH' },
+            '0x3': { name: 'Ropsten Testnet', chainId: 3, currency: 'ETH' },
+            '0x4': { name: 'Rinkeby Testnet', chainId: 4, currency: 'ETH' },
+            '0x5': { name: 'Goerli Testnet', chainId: 5, currency: 'ETH' },
+            '0x2a': { name: 'Kovan Testnet', chainId: 42, currency: 'ETH' },
+            '0x89': { name: 'Polygon Mainnet', chainId: 137, currency: 'MATIC' },
+            '0x13881': { name: 'Mumbai Testnet', chainId: 80001, currency: 'MATIC' },
+            '0xa': { name: 'Optimism', chainId: 10, currency: 'ETH' },
+            '0xa4b1': { name: 'Arbitrum One', chainId: 42161, currency: 'ETH' }
+        };
+
+        return networks[chainId] || { 
+            name: 'Unknown Network', 
+            chainId: parseInt(chainId, 16), 
+            currency: 'ETH' 
+        };
+    }
+
     async signMessage(message) {
         try {
             if (!this.signer) {
-                throw new Error('Wallet no conectada');
+                throw new Error('No signer available');
             }
-            
+
             const signature = await this.signer.signMessage(message);
             return signature;
-            
+
         } catch (error) {
-            console.error('Error signing message:', error);
+            console.error('❌ Failed to sign message:', error);
             throw error;
         }
     }
-    
+
     async getBalance() {
         try {
-            if (!this.provider || !this.account) {
-                return '0';
+            if (!this.account) {
+                return '0 ETH';
             }
-            
-            const balance = await this.provider.getBalance(this.account);
-            return ethers.utils.formatEther(balance);
-            
-        } catch (error) {
-            console.error('Error getting balance:', error);
-            return '0';
-        }
-    }
-    
-    async getNetwork() {
-        try {
-            if (!this.provider) {
-                return null;
+
+            const balance = await this.provider.request({
+                method: 'eth_getBalance',
+                params: [this.account, 'latest']
+            });
+
+            if (this.ethers && this.ethers.utils.formatEther) {
+                return `${this.ethers.utils.formatEther(balance)} ETH`;
+            } else {
+                // Fallback formatting
+                const ethBalance = (parseInt(balance, 16) / 1e18).toFixed(4);
+                return `${ethBalance} ETH`;
             }
-            
-            const network = await this.provider.getNetwork();
-            return network;
-            
+
         } catch (error) {
-            console.error('Error getting network:', error);
-            return null;
+            console.error('❌ Failed to get balance:', error);
+            return '0 ETH';
         }
     }
-    
-    updateUI() {
-        const connectBtn = document.getElementById('connect-wallet-btn');
-        const userInfo = document.getElementById('user-info');
-        const userAddress = document.getElementById('user-address');
-        
-        if (this.isConnected && this.account) {
-            // Hide connect button, show user info
-            if (connectBtn) connectBtn.classList.add('hidden');
-            if (userInfo) userInfo.classList.remove('hidden');
-            if (userAddress) userAddress.textContent = this.formatAddress(this.account);
-        } else {
-            // Show connect button, hide user info
-            if (connectBtn) connectBtn.classList.remove('hidden');
-            if (userInfo) userInfo.classList.add('hidden');
-        }
+
+    getNetwork() {
+        return this.network;
     }
-    
+
+    getAccount() {
+        return this.account;
+    }
+
+    isWalletConnected() {
+        return this.isConnected && this.account !== null;
+    }
+
+    getProvider() {
+        return this.provider;
+    }
+
+    getSigner() {
+        return this.signer;
+    }
+
+    // Utility methods
     formatAddress(address) {
         if (!address) return '';
-        return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        
+        if (this.ethers && this.ethers.utils.formatAddress) {
+            return this.ethers.utils.formatAddress(address);
+        } else {
+            // Fallback formatting
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
     }
-    
+
     formatEther(wei) {
-        try {
-            return ethers.utils.formatEther(wei);
-        } catch (error) {
-            return '0';
+        if (this.ethers && this.ethers.utils.formatEther) {
+            return this.ethers.utils.formatEther(wei);
+        } else {
+            // Fallback formatting
+            return (parseInt(wei) / 1e18).toFixed(4);
         }
     }
-    
+
     parseEther(ether) {
-        try {
-            return ethers.utils.parseEther(ether);
-        } catch (error) {
-            return ethers.constants.Zero;
+        if (this.ethers && this.ethers.utils.parseEther) {
+            return this.ethers.utils.parseEther(ether);
+        } else {
+            // Fallback parsing
+            return (parseFloat(ether) * 1e18).toString();
         }
     }
-    
-    isAddress(address) {
-        try {
-            return ethers.utils.isAddress(address);
-        } catch (error) {
-            return false;
+
+    // Event emission
+    emitEvent(eventName, data) {
+        const event = new CustomEvent(eventName, { detail: data });
+        document.dispatchEvent(event);
+    }
+
+    // Update UI
+    updateUI() {
+        // Update connect wallet button
+        const connectBtn = document.getElementById('connect-wallet');
+        if (connectBtn) {
+            if (this.isWalletConnected()) {
+                connectBtn.innerHTML = `
+                    <i class="fas fa-wallet"></i>
+                    ${this.formatAddress(this.account)}
+                `;
+                connectBtn.classList.remove('btn-primary');
+                connectBtn.classList.add('btn-secondary');
+                connectBtn.onclick = () => this.disconnectWallet();
+            } else {
+                connectBtn.innerHTML = `
+                    <i class="fas fa-wallet"></i>
+                    Connect Wallet
+                `;
+                connectBtn.classList.remove('btn-secondary');
+                connectBtn.classList.add('btn-primary');
+                connectBtn.onclick = () => this.connectWallet();
+            }
         }
-    }
-    
-    // Utility method to check if MetaMask is available
-    isMetaMaskAvailable() {
-        return typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
-    }
-    
-    // Get current connection status
-    getConnectionStatus() {
-        return {
-            isConnected: this.isConnected,
-            account: this.account,
-            chainId: this.chainId,
-            provider: this.provider
-        };
+
+        // Update wallet balance
+        if (this.isWalletConnected()) {
+            this.getBalance().then(balance => {
+                const balanceElement = document.getElementById('wallet-balance');
+                if (balanceElement) {
+                    balanceElement.textContent = balance;
+                }
+            });
+        }
     }
 }
-
-// Export for use in other modules
-window.DobiWeb3 = DobiWeb3;

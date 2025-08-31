@@ -1,363 +1,339 @@
-// Main Application Module for Dobi Protocol
+// Main Application Entry Point
+import { DobiWeb3 } from './web3.js';
+import { DobiUI } from './ui.js';
+import { DobiAuth } from './auth.js';
+import { DobiDevices } from './devices.js';
+import { DobiTransactions } from './transactions.js';
+import { chargerService } from './services/chargerService.js';
+
 class DobiApp {
     constructor() {
-        this.modules = {};
+        this.web3 = null;
+        this.ui = null;
+        this.auth = null;
+        this.devices = null;
+        this.transactions = null;
         this.isInitialized = false;
-        
-        this.init();
     }
-    
+
     async init() {
         try {
-            // Wait for DOM to be ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.initializeModules());
-            } else {
-                this.initializeModules();
-            }
+            console.log('🚀 Initializing Dobi Protocol Frontend...');
             
-        } catch (error) {
-            console.error('Error initializing DobiApp:', error);
-        }
-    }
-    
-    initializeModules() {
-        try {
-            // Initialize Web3 module first
-            this.modules.web3 = new DobiWeb3();
+            // Initialize modules
+            this.web3 = new DobiWeb3();
+            this.ui = new DobiUI();
+            this.auth = new DobiAuth();
+            this.devices = new DobiDevices();
+            this.transactions = new DobiTransactions();
             
-            // Initialize UI module
-            this.modules.ui = new DobiUI();
+            // Initialize each module
+            await this.web3.init();
+            this.ui.init();
+            this.auth.init();
+            this.devices.init();
+            this.transactions.init();
+
+            // Load real charger data from API
+            this.loadChargersFromAPI();
             
-            // Initialize authentication module
-            this.modules.auth = new DobiAuth();
-            
-            // Initialize devices module
-            this.modules.devices = new DobiDevices();
-            
-            // Initialize transactions module
-            this.modules.transactions = new DobiTransactions();
-            
-            // Set global references
-            window.dobiWeb3 = this.modules.web3;
-            window.dobiUI = this.modules.ui;
-            window.dobiAuth = this.modules.auth;
-            window.dobiDevices = this.modules.devices;
-            window.dobiTransactions = this.modules.transactions;
-            
-            // Setup global event listeners
+            // Set up global event listeners
             this.setupGlobalEventListeners();
+            
+            this.isInitialized = true;
+            console.log('✅ Dobi Protocol Frontend initialized successfully');
             
             // Load initial data
             this.loadInitialData();
             
-            // Mark as initialized
-            this.isInitialized = true;
-            
-            // Emit ready event
-            this.emitReadyEvent();
-            
-            console.log('Dobi Protocol initialized successfully');
-            
         } catch (error) {
-            console.error('Error initializing modules:', error);
+            console.error('❌ Failed to initialize Dobi Protocol Frontend:', error);
+            this.ui.showError('Failed to initialize application');
         }
     }
-    
+
     setupGlobalEventListeners() {
         // Authentication events
-        window.addEventListener('dobi:auth:authenticated', (event) => {
-            this.handleAuthentication(event.detail);
+        document.addEventListener('auth:connected', (e) => {
+            console.log('🔐 User authenticated:', e.detail);
+            this.onUserAuthenticated(e.detail);
         });
-        
-        window.addEventListener('dobi:auth:logout', (event) => {
-            this.handleLogout(event.detail);
+
+        document.addEventListener('auth:disconnected', () => {
+            console.log('🔓 User disconnected');
+            this.onUserDisconnected();
         });
-        
+
         // Page change events
-        window.addEventListener('dobi:page:changed', (event) => {
-            this.handlePageChange(event.detail);
+        document.addEventListener('page:changed', (e) => {
+            console.log('📄 Page changed to:', e.detail.page);
+            this.onPageChanged(e.detail.page);
         });
-        
+
         // Web3 events
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', (accounts) => {
-                this.handleAccountsChanged(accounts);
-            });
-            
-            window.ethereum.on('chainChanged', (chainId) => {
-                this.handleChainChanged(chainId);
-            });
-        }
-        
+        document.addEventListener('web3:accountChanged', (e) => {
+            console.log('👛 Account changed:', e.detail);
+            this.onAccountChanged(e.detail);
+        });
+
+        document.addEventListener('web3:networkChanged', (e) => {
+            console.log('🌐 Network changed:', e.detail);
+            this.onNetworkChanged(e.detail);
+        });
+
+        // Device events
+        document.addEventListener('device:created', (e) => {
+            console.log('📱 Device created:', e.detail);
+            this.onDeviceCreated(e.detail);
+        });
+
+        document.addEventListener('device:deleted', (e) => {
+            console.log('🗑️ Device deleted:', e.detail);
+            this.onDeviceDeleted(e.detail);
+        });
+
         // Error handling
-        window.addEventListener('error', (event) => {
-            this.handleGlobalError(event);
+        window.addEventListener('error', (e) => {
+            console.error('🌍 Global error:', e.error);
+            this.ui.showError('An unexpected error occurred');
         });
-        
-        window.addEventListener('unhandledrejection', (event) => {
-            this.handleUnhandledRejection(event);
-        });
-        
-        // Window events
-        window.addEventListener('resize', () => {
-            this.handleWindowResize();
-        });
-        
-        window.addEventListener('online', () => {
-            this.handleNetworkStatusChange(true);
-        });
-        
-        window.addEventListener('offline', () => {
-            this.handleNetworkStatusChange(false);
-        });
-        
-        // Visibility change
-        document.addEventListener('visibilitychange', () => {
-            this.handleVisibilityChange();
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('🚫 Unhandled promise rejection:', e.reason);
+            this.ui.showError('An unexpected error occurred');
         });
     }
-    
+
     async loadInitialData() {
         try {
-            // Load devices if user is authenticated
-            if (this.modules.auth && this.modules.auth.isUserAuthenticated()) {
-                await this.modules.devices.loadDevices();
-                await this.modules.transactions.loadTransactions();
-            }
-            
-            // Update UI
-            this.updateUI();
-            
-        } catch (error) {
-            console.error('Error loading initial data:', error);
-        }
-    }
-    
-    handleAuthentication(authData) {
-        try {
-            console.log('User authenticated:', authData);
-            
-            // Load user-specific data
-            this.modules.devices.loadDevices();
-            this.modules.transactions.loadTransactions();
-            
-            // Update UI
-            this.updateUI();
-            
-        } catch (error) {
-            console.error('Error handling authentication:', error);
-        }
-    }
-    
-    handleLogout(authData) {
-        try {
-            console.log('User logged out:', authData);
-            
-            // Clear user-specific data
-            this.modules.devices.clearDevices();
-            this.modules.transactions.clearTransactions();
-            
-            // Update UI
-            this.updateUI();
-            
-        } catch (error) {
-            console.error('Error handling logout:', error);
-        }
-    }
-    
-    handlePageChange(pageData) {
-        try {
-            console.log('Page changed:', pageData);
-            
-            // Load page-specific data
-            switch (pageData.page) {
-                case 'devices':
-                    if (this.modules.devices) {
-                        this.modules.devices.loadDevices();
-                    }
-                    break;
-                    
-                case 'transactions':
-                    if (this.modules.transactions) {
-                        this.modules.transactions.loadTransactions();
-                    }
-                    break;
-                    
-                case 'home':
-                    // Refresh home page data
-                    if (this.modules.devices) {
-                        this.modules.devices.loadDevices();
-                    }
-                    break;
+            // Check if user is already authenticated
+            if (this.auth.isAuthenticated()) {
+                console.log('🔄 Loading data for authenticated user...');
+                
+                // Load user's devices
+                await this.devices.loadDevices();
+                
+                // Load recent transactions
+                await this.transactions.loadTransactions();
+                
+                // Update stats
+                this.updateStats();
+                
+                // Update UI
+                this.ui.updateUI();
+                
+            } else {
+                console.log('👤 No authenticated user, showing login state');
+                this.ui.showInfo('Please connect your wallet to start using Dobi Protocol');
             }
             
         } catch (error) {
-            console.error('Error handling page change:', error);
+            console.error('❌ Failed to load initial data:', error);
+            this.ui.showError('Failed to load application data');
         }
     }
-    
-    handleAccountsChanged(accounts) {
-        try {
-            console.log('Accounts changed:', accounts);
-            
-            // Handle account change in Web3 module
-            if (this.modules.web3) {
-                this.modules.web3.handleAccountsChanged(accounts);
-            }
-            
-        } catch (error) {
-            console.error('Error handling accounts change:', error);
-        }
-    }
-    
-    handleChainChanged(chainId) {
-        try {
-            console.log('Chain changed:', chainId);
-            
-            // Handle chain change in Web3 module
-            if (this.modules.web3) {
-                this.modules.web3.handleChainChanged(chainId);
-            }
-            
-        } catch (error) {
-            console.error('Error handling chain change:', error);
-        }
-    }
-    
-    handleGlobalError(errorEvent) {
-        console.error('Global error:', errorEvent);
+
+    onUserAuthenticated(userData) {
+        // Update UI to show authenticated state
+        this.ui.updateAuthUI(userData);
         
-        // Show error notification
-        if (this.modules.ui) {
-            this.modules.ui.showError('Error del sistema', 'Ha ocurrido un error inesperado');
-        }
-    }
-    
-    handleUnhandledRejection(event) {
-        console.error('Unhandled promise rejection:', event.reason);
+        // Load user-specific data
+        this.devices.loadDevices();
+        this.transactions.loadTransactions();
         
-        // Show error notification
-        if (this.modules.ui) {
-            this.modules.ui.showError('Error de promesa', 'Una operación asíncrona ha fallado');
+        // Update stats
+        this.updateStats();
+        
+        // Show success message
+        this.ui.showSuccess(`Welcome back, ${userData.address.slice(0, 6)}...${userData.address.slice(-4)}!`);
+    }
+
+    onUserDisconnected() {
+        // Clear user data
+        this.devices.clearDevices();
+        this.transactions.clearTransactions();
+        
+        // Update UI to show unauthenticated state
+        this.ui.updateAuthUI(null);
+        
+        // Reset stats
+        this.resetStats();
+        
+        // Show info message
+        this.ui.showInfo('You have been disconnected from your wallet');
+    }
+
+    onPageChanged(page) {
+        // Load page-specific data
+        switch (page) {
+            case 'home':
+                this.devices.loadRecentDevices();
+                this.updateStats();
+                break;
+            case 'devices':
+                this.devices.loadDevices();
+                break;
+            case 'transactions':
+                this.transactions.loadTransactions();
+                break;
+            case 'create':
+                // Form is already loaded
+                break;
         }
     }
-    
-    handleWindowResize() {
-        // Handle responsive design adjustments
-        if (this.modules.ui && this.modules.ui.isMobileMenuOpen()) {
-            // Close mobile menu on resize if switching to desktop
-            if (window.innerWidth > 768) {
-                this.modules.ui.closeMobileMenu();
-            }
+
+    onAccountChanged(accountData) {
+        if (this.auth.isAuthenticated()) {
+            // Re-authenticate with new account
+            this.auth.handleAccountChange(accountData);
         }
     }
-    
-    handleNetworkStatusChange(isOnline) {
-        if (isOnline) {
-            console.log('Network connection restored');
-            
-            if (this.modules.ui) {
-                this.modules.ui.showSuccess('Conexión restaurada', 'La conexión a internet se ha restaurado');
-            }
-        } else {
-            console.log('Network connection lost');
-            
-            if (this.modules.ui) {
-                this.modules.ui.showWarning('Sin conexión', 'La conexión a internet se ha perdido');
-            }
-        }
+
+    onNetworkChanged(networkData) {
+        // Update network indicator
+        this.ui.updateNetworkUI(networkData);
+        
+        // Show network change notification
+        this.ui.showInfo(`Connected to ${networkData.name} network`);
     }
-    
-    handleVisibilityChange() {
-        if (document.hidden) {
-            console.log('Page hidden');
-        } else {
-            console.log('Page visible');
-            
-            // Refresh data when page becomes visible
-            this.loadInitialData();
-        }
+
+    onDeviceCreated(deviceData) {
+        // Refresh devices list
+        this.devices.loadDevices();
+        this.devices.loadRecentDevices();
+        
+        // Update stats
+        this.updateStats();
+        
+        // Show success message
+        this.ui.showSuccess(`Device "${deviceData.name}" created successfully!`);
     }
-    
-    updateUI() {
+
+    onDeviceDeleted(deviceData) {
+        // Refresh devices list
+        this.devices.loadDevices();
+        this.devices.loadRecentDevices();
+        
+        // Update stats
+        this.updateStats();
+        
+        // Show success message
+        this.ui.showSuccess(`Device "${deviceData.name}" deleted successfully!`);
+    }
+
+    updateStats() {
         try {
-            // Update navigation
-            if (this.modules.ui) {
-                // Update active page
-                const currentPage = this.modules.ui.getCurrentPage();
-                this.modules.ui.navigateToPage(currentPage);
-            }
+            const totalDevices = this.devices.getTotalDevices();
+            const activeConnections = this.devices.getActiveConnections();
+            const totalTransactions = this.transactions.getTotalTransactions();
+            const walletBalance = this.web3.getBalance();
             
-            // Update authentication UI
-            if (this.modules.auth) {
-                this.modules.auth.updateUI();
-            }
-            
-            // Update Web3 UI
-            if (this.modules.web3) {
-                this.modules.web3.updateUI();
-            }
+            // Update stats in UI
+            document.getElementById('total-devices').textContent = totalDevices;
+            document.getElementById('active-connections').textContent = activeConnections;
+            document.getElementById('total-transactions').textContent = totalTransactions;
+            document.getElementById('wallet-balance').textContent = walletBalance;
             
         } catch (error) {
-            console.error('Error updating UI:', error);
+            console.error('❌ Failed to update stats:', error);
         }
     }
-    
-    emitReadyEvent() {
-        const event = new CustomEvent('dobi:app:ready', {
-            detail: {
-                modules: Object.keys(this.modules),
-                timestamp: Date.now()
-            }
-        });
-        
-        window.dispatchEvent(event);
+
+    resetStats() {
+        // Reset all stats to 0
+        document.getElementById('total-devices').textContent = '0';
+        document.getElementById('active-connections').textContent = '0';
+        document.getElementById('total-transactions').textContent = '0';
+        document.getElementById('wallet-balance').textContent = '0 ETH';
     }
-    
-    // Get module by name
-    getModule(moduleName) {
-        return this.modules[moduleName];
+
+    // Public methods for global access
+    getWeb3() {
+        return this.web3;
     }
-    
-    // Check if app is initialized
-    isAppInitialized() {
+
+    getUI() {
+        return this.ui;
+    }
+
+    getAuth() {
+        return this.auth;
+    }
+
+    getDevices() {
+        return this.devices;
+    }
+
+    getTransactions() {
+        return this.transactions;
+    }
+
+    isReady() {
         return this.isInitialized;
     }
-    
-    // Get app status
-    getAppStatus() {
-        return {
-            isInitialized: this.isInitialized,
-            modules: Object.keys(this.modules),
-            currentPage: this.modules.ui ? this.modules.ui.getCurrentPage() : null,
-            isAuthenticated: this.modules.auth ? this.modules.auth.isUserAuthenticated() : false
-        };
-    }
-    
-    // Refresh all data
-    async refreshData() {
+
+    /**
+     * Load real charger data from Dobi API
+     */
+    async loadChargersFromAPI() {
         try {
-            if (this.modules.devices) {
-                await this.modules.devices.loadDevices();
-            }
+            console.log('🔌 Loading chargers from Dobi API...');
             
-            if (this.modules.transactions) {
-                await this.modules.transactions.loadTransactions();
+            // Show loading message
+            if (this.ui) {
+                this.ui.showInfo('Loading real charger data from Dobi API...');
             }
+
+            // Load chargers from API
+            const chargersResponse = await chargerService.getDetailedChargers();
             
-            this.updateUI();
+            if (chargersResponse.success) {
+                console.log('✅ Chargers loaded successfully from API:', chargersResponse.data.length);
+                
+                // Update devices with real charger data
+                await this.devices.loadDevices();
+                
+                if (this.ui) {
+                    this.ui.showSuccess(`Loaded ${chargersResponse.data.length} chargers from Dobi API`);
+                }
+            } else {
+                console.warn('⚠️ Failed to load chargers from API, using mock data:', chargersResponse.error);
+                
+                if (this.ui) {
+                    this.ui.showWarning('Using mock data - API connection failed');
+                }
+            }
             
         } catch (error) {
-            console.error('Error refreshing data:', error);
+            console.error('❌ Error loading chargers from API:', error);
+            
+            if (this.ui) {
+                this.ui.showError('Failed to load chargers from API');
+            }
         }
     }
 }
 
-// Initialize app after DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.dobiApp = new DobiApp();
+// Global app instance
+window.dobiApp = new DobiApp();
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await window.dobiApp.init();
+    } catch (error) {
+        console.error('❌ Failed to initialize app:', error);
+    }
 });
 
-// Export for use in other modules
-window.DobiApp = DobiApp;
+// Global utility functions
+window.showPage = (pageName) => {
+    if (window.dobiApp && window.dobiApp.isReady()) {
+        window.dobiApp.getUI().navigateToPage(pageName);
+    } else {
+        console.warn('⚠️ App not ready yet, cannot navigate to:', pageName);
+    }
+};
+
+// Export for module usage
+export default DobiApp;

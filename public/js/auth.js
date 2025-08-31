@@ -1,261 +1,324 @@
 // Authentication Module for Dobi Protocol
-class DobiAuth {
+export class DobiAuth {
     constructor() {
-        this.user = null;
         this.isAuthenticated = false;
-        this.authToken = null;
-        
-        this.setupEventListeners();
-        this.loadStoredAuth();
+        this.userData = null;
+        this.nonce = null;
+        this.web3 = null;
     }
-    
+
+    init() {
+        try {
+            // Check for existing session
+            this.loadSession();
+            
+            // Set up event listeners
+            this.setupEventListeners();
+            
+            console.log('🔐 Authentication module initialized');
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize authentication:', error);
+        }
+    }
+
     setupEventListeners() {
         // Connect wallet button
-        const connectBtn = document.getElementById('connect-wallet-btn');
+        const connectBtn = document.getElementById('connect-wallet');
         if (connectBtn) {
             connectBtn.addEventListener('click', () => this.handleConnectWallet());
         }
-        
-        // Disconnect button
-        const disconnectBtn = document.getElementById('disconnect-btn');
-        if (disconnectBtn) {
-            disconnectBtn.addEventListener('click', () => this.handleDisconnect());
-        }
     }
-    
+
     async handleConnectWallet() {
         try {
-            // Show loading
-            if (window.dobiUI) {
-                window.dobiUI.showLoading('Conectando wallet...');
+            if (this.isAuthenticated) {
+                await this.handleDisconnect();
+                return;
             }
-            
+
+            // Get Web3 instance from app
+            if (window.dobiApp && window.dobiApp.getWeb3) {
+                this.web3 = window.dobiApp.getWeb3();
+            } else {
+                throw new Error('Web3 module not available');
+            }
+
             // Connect wallet
-            const account = await window.dobiWeb3.connectWallet();
+            await this.web3.connectWallet();
             
             // Get nonce from backend
-            const nonce = await this.getNonce(account);
+            await this.getNonce();
             
             // Sign message
-            const message = `Dobi Protocol Authentication\n\nAddress: ${account}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
-            const signature = await window.dobiWeb3.signMessage(message);
+            const signature = await this.signMessage();
             
-            // Verify signature with backend
-            const authResult = await this.verifySignature(account, message, signature);
+            // Verify signature
+            const verified = await this.verifySignature(signature);
             
-            if (authResult.success) {
-                this.user = {
-                    address: account,
-                    name: authResult.user?.name || 'Usuario',
-                    email: authResult.user?.email || null
+            if (verified) {
+                // Store session
+                this.userData = {
+                    address: this.web3.getAccount(),
+                    network: this.web3.getNetwork(),
+                    signature: signature,
+                    timestamp: Date.now()
                 };
                 
-                this.authToken = authResult.token;
                 this.isAuthenticated = true;
+                this.saveSession();
                 
-                // Store auth data
-                this.storeAuthData();
+                // Emit authentication event
+                this.emitEvent('auth:connected', this.userData);
                 
                 // Update UI
                 this.updateUI();
                 
-                // Emit event
-                this.emitAuthEvent('authenticated');
-                
-                // Show success message
-                if (window.dobiUI) {
-                    window.dobiUI.showSuccess('Autenticación exitosa', 'Wallet conectada correctamente');
-                    window.dobiUI.hideLoading();
-                }
+                console.log('🔐 User authenticated successfully');
                 
             } else {
-                throw new Error(authResult.error || 'Error en la autenticación');
+                throw new Error('Signature verification failed');
             }
             
         } catch (error) {
-            console.error('Authentication error:', error);
+            console.error('❌ Authentication failed:', error);
             
-            // Show error message
-            if (window.dobiUI) {
-                window.dobiUI.showError('Error de autenticación', error.message);
-                window.dobiUI.hideLoading();
+            // Show error to user
+            if (window.dobiApp && window.dobiApp.getUI) {
+                window.dobiApp.getUI().showError('Authentication failed: ' + error.message);
             }
         }
     }
-    
+
     async handleDisconnect() {
         try {
             // Disconnect wallet
-            await window.dobiWeb3.disconnectWallet();
+            if (this.web3) {
+                await this.web3.disconnectWallet();
+            }
             
-            // Clear auth data
-            this.clearAuthData();
+            // Clear session
+            this.clearSession();
+            
+            // Emit disconnect event
+            this.emitEvent('auth:disconnected', {});
             
             // Update UI
             this.updateUI();
             
-            // Emit event
-            this.emitAuthEvent('logout');
-            
-            // Show success message
-            if (window.dobiUI) {
-                window.dobiUI.showSuccess('Desconectado', 'Wallet desconectada correctamente');
-            }
+            console.log('🔓 User disconnected successfully');
             
         } catch (error) {
-            console.error('Disconnect error:', error);
-            
-            if (window.dobiUI) {
-                window.dobiUI.showError('Error al desconectar', error.message);
-            }
+            console.error('❌ Disconnect failed:', error);
         }
     }
-    
-    async getNonce(address) {
+
+    async handleAccountChange(accountData) {
         try {
-            // For now, return a simple nonce
-            // In production, this should come from your backend
-            return `nonce_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            if (this.isAuthenticated) {
+                // Re-authenticate with new account
+                await this.handleConnectWallet();
+            }
+        } catch (error) {
+            console.error('❌ Account change handling failed:', error);
+        }
+    }
+
+    async getNonce() {
+        try {
+            // Mock nonce for development
+            // In production, this would be a real API call
+            this.nonce = `dobi-auth-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            console.log('🔑 Nonce generated:', this.nonce);
             
         } catch (error) {
-            console.error('Error getting nonce:', error);
-            throw new Error('No se pudo obtener el nonce');
+            console.error('❌ Failed to get nonce:', error);
+            throw error;
         }
     }
-    
-    async verifySignature(address, message, signature) {
+
+    async signMessage() {
         try {
-            // For now, return success
-            // In production, this should verify with your backend
-            return {
-                success: true,
-                token: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                user: {
-                    name: 'Usuario Dobi',
-                    email: null
+            if (!this.web3 || !this.nonce) {
+                throw new Error('Web3 or nonce not available');
+            }
+
+            const message = `Welcome to Dobi Protocol!\n\nPlease sign this message to authenticate.\n\nNonce: ${this.nonce}\n\nBy signing, you agree to our Terms of Service.`;
+            
+            const signature = await this.web3.signMessage(message);
+            
+            console.log('✍️ Message signed successfully');
+            
+            return signature;
+            
+        } catch (error) {
+            console.error('❌ Failed to sign message:', error);
+            throw error;
+        }
+    }
+
+    async verifySignature(signature) {
+        try {
+            // Mock verification for development
+            // In production, this would be verified on the backend
+            const isValid = signature && signature.length > 0;
+            
+            console.log('✅ Signature verification:', isValid ? 'PASSED' : 'FAILED');
+            
+            return isValid;
+            
+        } catch (error) {
+            console.error('❌ Signature verification failed:', error);
+            return false;
+        }
+    }
+
+    // Session management
+    saveSession() {
+        try {
+            const sessionData = {
+                isAuthenticated: this.isAuthenticated,
+                userData: this.userData,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('dobi-session', JSON.stringify(sessionData));
+            
+        } catch (error) {
+            console.error('❌ Failed to save session:', error);
+        }
+    }
+
+    loadSession() {
+        try {
+            const sessionData = localStorage.getItem('dobi-session');
+            
+            if (sessionData) {
+                const session = JSON.parse(sessionData);
+                
+                // Check if session is still valid (24 hours)
+                const sessionAge = Date.now() - session.timestamp;
+                const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+                
+                if (sessionAge < maxAge && session.isAuthenticated && session.userData) {
+                    this.isAuthenticated = session.isAuthenticated;
+                    this.userData = session.userData;
+                    
+                    console.log('🔄 Session restored from storage');
+                    return true;
+                } else {
+                    // Session expired, clear it
+                    this.clearSession();
                 }
-            };
+            }
+            
+            return false;
             
         } catch (error) {
-            console.error('Error verifying signature:', error);
-            return {
-                success: false,
-                error: 'Error al verificar la firma'
-            };
+            console.error('❌ Failed to load session:', error);
+            this.clearSession();
+            return false;
         }
     }
-    
+
+    clearSession() {
+        try {
+            this.isAuthenticated = false;
+            this.userData = null;
+            this.nonce = null;
+            
+            localStorage.removeItem('dobi-session');
+            
+        } catch (error) {
+            console.error('❌ Failed to clear session:', error);
+        }
+    }
+
+    // Utility methods
+    isUserAuthenticated() {
+        return this.isAuthenticated;
+    }
+
+    getUserData() {
+        return this.userData;
+    }
+
+    getAddress() {
+        return this.userData ? this.userData.address : null;
+    }
+
+    getNetwork() {
+        return this.userData ? this.userData.network : null;
+    }
+
+    // Event emission
+    emitEvent(eventName, data) {
+        const event = new CustomEvent(eventName, { detail: data });
+        document.dispatchEvent(event);
+    }
+
+    // Update UI
     updateUI() {
-        const connectBtn = document.getElementById('connect-wallet-btn');
-        const userInfo = document.getElementById('user-info');
-        const userAddress = document.getElementById('user-address');
-        
-        if (this.isAuthenticated && this.user) {
-            // Hide connect button, show user info
-            if (connectBtn) connectBtn.classList.add('hidden');
-            if (userInfo) userInfo.classList.remove('hidden');
-            if (userAddress) userAddress.textContent = this.formatAddress(this.user.address);
-        } else {
-            // Show connect button, hide user info
-            if (connectBtn) connectBtn.classList.remove('hidden');
-            if (userInfo) userInfo.classList.add('hidden');
+        // Update connect wallet button
+        const connectBtn = document.getElementById('connect-wallet');
+        if (connectBtn) {
+            if (this.isAuthenticated) {
+                connectBtn.innerHTML = `
+                    <i class="fas fa-wallet"></i>
+                    ${this.formatAddress(this.userData.address)}
+                `;
+                connectBtn.classList.remove('btn-primary');
+                connectBtn.classList.add('btn-secondary');
+                connectBtn.onclick = () => this.handleDisconnect();
+            } else {
+                connectBtn.innerHTML = `
+                    <i class="fas fa-wallet"></i>
+                    Connect Wallet
+                `;
+                connectBtn.classList.remove('btn-secondary');
+                connectBtn.classList.add('btn-primary');
+                connectBtn.onclick = () => this.handleConnectWallet();
+            }
         }
+
+        // Update navigation based on auth status
+        this.updateNavigation();
     }
-    
+
+    updateNavigation() {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        
+        navButtons.forEach(btn => {
+            if (this.isAuthenticated) {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            } else {
+                // Disable navigation buttons when not authenticated
+                if (btn.id !== 'nav-home') {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                }
+            }
+        });
+    }
+
     formatAddress(address) {
         if (!address) return '';
         return `${address.slice(0, 6)}...${address.slice(-4)}`;
     }
-    
-    storeAuthData() {
-        try {
-            const authData = {
-                user: this.user,
-                token: this.authToken,
-                timestamp: Date.now()
-            };
-            
-            localStorage.setItem('dobi_auth', JSON.stringify(authData));
-            
-        } catch (error) {
-            console.error('Error storing auth data:', error);
+
+    // Public methods for external access
+    async authenticate() {
+        if (!this.isAuthenticated) {
+            await this.handleConnectWallet();
         }
+        return this.isAuthenticated;
     }
-    
-    loadStoredAuth() {
-        try {
-            const stored = localStorage.getItem('dobi_auth');
-            if (stored) {
-                const authData = JSON.parse(stored);
-                
-                // Check if token is still valid (24 hours)
-                const isValid = (Date.now() - authData.timestamp) < (24 * 60 * 60 * 1000);
-                
-                if (isValid) {
-                    this.user = authData.user;
-                    this.authToken = authData.token;
-                    this.isAuthenticated = true;
-                    
-                    this.updateUI();
-                } else {
-                    // Token expired, clear it
-                    this.clearAuthData();
-                }
-            }
-            
-        } catch (error) {
-            console.error('Error loading stored auth:', error);
-            this.clearAuthData();
+
+    async logout() {
+        if (this.isAuthenticated) {
+            await this.handleDisconnect();
         }
-    }
-    
-    clearAuthData() {
-        this.user = null;
-        this.authToken = null;
-        this.isAuthenticated = false;
-        
-        try {
-            localStorage.removeItem('dobi_auth');
-        } catch (error) {
-            console.error('Error clearing auth data:', error);
-        }
-    }
-    
-    emitAuthEvent(eventType) {
-        const event = new CustomEvent(`dobi:auth:${eventType}`, {
-            detail: {
-                user: this.user,
-                isAuthenticated: this.isAuthenticated
-            }
-        });
-        
-        window.dispatchEvent(event);
-    }
-    
-    // Get current auth status
-    getAuthStatus() {
-        return {
-            isAuthenticated: this.isAuthenticated,
-            user: this.user,
-            token: this.authToken
-        };
-    }
-    
-    // Check if user is authenticated
-    isUserAuthenticated() {
-        return this.isAuthenticated && this.user !== null;
-    }
-    
-    // Get user info
-    getUser() {
-        return this.user;
-    }
-    
-    // Get auth token
-    getToken() {
-        return this.authToken;
     }
 }
-
-// Export for use in other modules
-window.DobiAuth = DobiAuth;
