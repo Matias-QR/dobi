@@ -24,7 +24,7 @@ app.use('/api', createProxyMiddleware({
     changeOrigin: true,
     secure: true,
     pathRewrite: {
-        '^/api': '/api' // Keep the /api prefix
+        '^/api/proxy': '/api' // Remove /api/proxy and keep /api
     },
     onProxyReq: (proxyReq, req, res) => {
         console.log(`🔄 Proxying request: ${req.method} ${req.url} -> https://api-aleph.dobi.guru${req.url}`);
