@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Proxy API requests to Dobi API to avoid CORS issues
-app.use('/api', createProxyMiddleware({
+app.use('/api/proxy', createProxyMiddleware({
     target: 'https://api-aleph.dobi.guru',
     changeOrigin: true,
     secure: true,
@@ -27,7 +27,7 @@ app.use('/api', createProxyMiddleware({
         '^/api/proxy': '/api' // Remove /api/proxy and keep /api
     },
     onProxyReq: (proxyReq, req, res) => {
-        console.log(`🔄 Proxying request: ${req.method} ${req.url} -> https://api-aleph.dobi.guru${req.url}`);
+        console.log(`🔄 Proxying request: ${req.method} ${req.url} -> https://api-aleph.dobi.guru${req.url.replace('/api/proxy', '/api')}`);
     },
     onProxyRes: (proxyRes, req, res) => {
         console.log(`✅ Proxy response: ${proxyRes.statusCode} for ${req.url}`);

@@ -1,0 +1,222 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex a40481c..d6d0080 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,147 +1,360 @@[m
+[31m-# 🔌 Dobi Protocol Frontend[m
+[32m+[m[32m# Electric Charger API - Blockchain & Simulation[m
+ [m
+[31m-Frontend interface for Dobi Protocol Web3 IoT platform with integrated API proxy to avoid CORS issues.[m
+[32m+[m[32mComplete electric charger management system with Base Mainnet blockchain integration, automatic transaction simulation, and real-time monitoring.[m
+ [m
+[31m-## 🚀 Features[m
+[32m+[m[32m## Key Features[m
+ [m
+[31m-- **Modern Dark Theme** - Elegant dark interface matching dobi.guru aesthetic[m
+[31m-- **Real-time API Integration** - Direct connection to Dobi API with proxy[m
+[31m-- **Charger Management** - View and manage IoT chargers from the API[m
+[31m-- **Web3 Integration** - MetaMask wallet connection[m
+[31m-- **Responsive Design** - Works on all devices[m
+[31m-- **Real-time Statistics** - Live dashboard with charger data[m
+[32m+[m[32m### Blockchain Integration[m
+[32m+[m[32m- Unique wallets for each charger using ethers.js[m
+[32m+[m[32m- Real transactions on Base Mainnet (configurable)[m
+[32m+[m[32m- Automatic management of funds and operational costs[m
+[32m+[m[32m- Simulation mode for development and testing[m
+ [m
+[31m-## 🛠️ Installation[m
+[32m+[m[32m### Intelligent Simulation[m
+[32m+[m[32m- Automatic transactions randomly scheduled[m
+[32m+[m[32m- Realistic operating hours (8 AM - 10 PM)[m
+[32m+[m[32m- Configurable daily limits per charger[m
+[32m+[m[32m- Realistic economics (costs = 40% of income)[m
+[32m+[m
+[32m+[m[32m### Complete Management[m
+[32m+[m[32m- SQLite database for persistence[m
+[32m+[m[32m- Detailed logging system[m
+[32m+[m[32m- Complete REST API with validation[m
+[32m+[m[32m- Real-time blockchain queries[m
+[32m+[m
+[32m+[m[32m## Installation[m
+ [m
+ ### Prerequisites[m
+[31m-- Node.js 16+ [m
+[32m+[m[32m- Node.js (v14 or higher)[m
+ - npm or yarn[m
+[32m+[m[32m- Internet access (for Base RPC)[m
+[32m+[m
+[32m+[m[32m### Installation Steps[m
+[32m+[m
+[32m+[m[32m# Clone or download the project[m
+[32m+[m[32mgit clone <your-repository>[m
+[32m+[m[32mcd dobi-api[m
+[32m+[m
+[32m+[m[32m# Install dependencies[m
+[32m+[m[32mnpm install express sqlite3 ethers dotenv[m
+[32m+[m
+[32m+[m[32m# Create configuration file[m
+[32m+[m[32mcp .env.example .env[m
+[32m+[m
+[32m+[m[32m# Edit environment variables[m
+[32m+[m[32mnano .env[m
+[32m+[m
+[32m+[m[32m# Create initial data (optional)[m
+[32m+[m[32mnano chargers.json[m
+[32m+[m
+[32m+[m[32m# Run the server[m
+[32m+[m[32mnode server.js[m
+[32m+[m
+[32m+[m[32m## Configuration[m
+[32m+[m
+[32m+[m[32m### .env File[m
+[32m+[m
+[32m+[m[32m# Server[m
+[32m+[m[32mPORT=6139[m
+[32m+[m
+[32m+[m[32m# Blockchain[m
+[32m+[m[32mBASE_RPC=https://mainnet.base.org[m
+[32m+[m[32mSEND_ONCHAIN=false[m
+[32m+[m[32mMASTER_PRIVATE_KEY=your_private_key_here[m
+[32m+[m
+[32m+[m[32m# Simulation[m
+[32m+[m[32mMIN_TX_ETH=0.0001[m
+[32m+[m[32mMAX_TX_ETH=0.0002[m
+[32m+[m
+[32m+[m[32m# Security[m
+[32m+[m[32mAPI_KEY=your_secure_api_key_here[m
+[32m+[m
+[32m+[m[32m### chargers.json File (optional)[m
+[32m+[m
+[32m+[m[32m[[m
+[32m+[m[32m  {[m
+[32m+[m[32m    "id_charger": "CHARGER_001",[m
+[32m+[m[32m    "owner_address": "0x742d35Cc6634C0532925a3b8D56B4B8d3d73a9B1",[m
+[32m+[m[32m    "status": "active",[m
+[32m+[m[32m    "transactions": 0,[m
+[32m+[m[32m    "income_generated": 0,[m
+[32m+[m[32m    "cost_generated": 0,[m
+[32m+[m[32m    "balance_total": 0[m
+[32m+[m[32m  }[m
+[32m+[m[32m][m
+[32m+[m
+[32m+[m[32m## Project Structure[m
+[32m+[m
+[32m+[m[32mdobi-api/[m
+[32m+[m[32m├── server.js              # Main server[m
+[32m+[m[32m├── test.js               # Test script[m
+[32m+[m[32m├── .env                  # Environment variables (DO NOT commit)[m
+[32m+[m[32m├── .gitignore           # Files to ignore[m
+[32m+[m[32m├── chargers.json        # Initial data (optional)[m
+[32m+[m[32m├── chargers.db          # SQLite database (auto-generated)[m
+[32m+[m[32m├── package.json         # Project dependencies[m
+[32m+[m[32m└── README.md           # This file[m
+[32m+[m
+[32m+[m[32m## API Endpoints[m
+[32m+[m
+[32m+[m[32m### Charger Management[m
+[32m+[m
+[32m+[m[32m#### POST /api/chargers[m
+[32m+[m[32mCreates a new charger with unique wallet.[m
+[32m+[m[32m{[m
+[32m+[m[32m  "id_charger": "CHARGER_001",[m
+[32m+[m[32m  "owner_address": "0x742d35Cc6634C0532925a3b8D56B4B8d3d73a9B1",[m
+[32m+[m[32m  "status": "active"[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#### GET /api/chargers/detailed[m
+[32m+[m[32mGets complete information for all chargers.[m
+[32m+[m[32m{[m
+[32m+[m[32m  "summary": {[m
+[32m+[m[32m    "total_chargers": 3,[m
+[32m+[m[32m    "active_chargers": 2,[m
+[32m+[m[32m    "total_transactions": 15[m
+[32m+[m[32m  },[m
+[32m+[m[32m  "chargers": [...],[m
+[32m+[m[32m  "system_info": {...}[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m### Charger Actions[m
+[32m+[m
+[32m+[m[32m#### POST /api/chargers/:id/action[m
+[32m+[m[32mExecutes actions on a specific charger.[m
+[32m+[m
+[32m+[m[32mAvailable actions:[m
+[32m+[m[32m- turn_on - Activates charger and schedules transactions[m
+[32m+[m[32m- turn_off - Deactivates charger[m
+[32m+[m[32m- restart - Restarts (off for 3s, then on)[m
+[32m+[m[32m- create_ticket - Creates simulated support ticket[m
+[32m+[m[32m- pay_costs - Pays operational costs (40% of balance)[m
+[32m+[m[32m- send_to_owner - Transfers funds to owner[m
+[32m+[m
+[32m+[m[32m{[m
+[32m+[m[32m  "action": "turn_on"[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m### Transaction Simulation[m
+[32m+[m
+[32m+[m[32m#### POST /api/chargers/:id/simulate_transaction[m
+[32m+[m[32mSimulates a manual transaction.[m
+[32m+[m
+[32m+[m[32m{[m
+[32m+[m[32m  "amount_eth": 0.001[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m### Logs and Monitoring[m
+[32m+[m
+[32m+[m[32m#### GET /api/logs[m
+[32m+[m[32mGets system logs with filtering options.[m
+ [m
+[31m-### Setup[m
+[31m-[m
+[31m-1. **Clone the repository**[m
+[31m-   ```bash[m
+[31m-   git clone https://github.com/Matias-QR/dobi.git[m
+[31m-   cd dobi[m
+[31m-   ```[m
+[31m-[m
+[31m-2. **Install dependencies**[m
+[31m-   ```bash[m
+[31m-   npm install[m
+[31m-   ```[m
+[31m-[m
+[31m-3. **Start the server**[m
+[31m-   ```bash[m
+[31m-   npm start[m
+[31m-   ```[m
+[31m-[m
+[31m-4. **Open your browser**[m
+[31m-   Navigate to `http://localhost:3001`[m
+[31m-[m
+[31m-## 📁 Project Structure[m
+[31m-[m
+[31m-```[m
+[31m-dobi/[m
+[31m-├── public/                 # Frontend files[m
+[31m-│   ├── index.html         # Main HTML file[m
+[31m-│   ├── styles/            # CSS files[m
+[31m-│   ├── js/                # JavaScript modules[m
+[31m-│   └── services/          # API services[m
+[31m-├── server.js              # Express server with proxy[m
+[31m-├── package.json           # Dependencies[m
+[31m-└── README.md             # This file[m
+[31m-```[m
+[31m-[m
+[31m-## 🔌 API Integration[m
+[31m-[m
+[31m-The frontend connects to the Dobi API at `https://api-aleph.dobi.guru` through a local proxy to avoid CORS issues.[m
+[31m-[m
+[31m-### Available Endpoints[m
+[31m-- **Chargers**: `/api/chargers/detailed` - Get detailed charger information[m
+[31m-- **Devices**: `/api/devices/*` - Device management[m
+[31m-- **Transactions**: `/api/transactions/*` - Transaction history[m
+[31m-[m
+[31m-## 🎨 Customization[m
+[31m-[m
+[31m-### Colors[m
+[31m-The theme uses CSS variables that can be easily modified in `public/styles/main.css`:[m
+[31m-[m
+[31m-```css[m
+[31m-:root {[m
+[31m-    --primary-color: #00d4aa;[m
+[31m-    --bg-color: #0f0f23;[m
+[31m-    --text-color: #

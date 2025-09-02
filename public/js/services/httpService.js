@@ -188,7 +188,7 @@ export class HttpService {
         const nextAttempt = attempt + 1;
         const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
         
-        console.log(`🔄 Retrying request to ${endpoint} (attempt ${nextAttempt}/${this.retryAttempts})`);
+
         
         await new Promise(resolve => setTimeout(resolve, delay));
         

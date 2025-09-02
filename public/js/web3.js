@@ -13,7 +13,7 @@ export class DobiWeb3 {
         try {
             // Check if MetaMask is installed
             if (typeof window.ethereum !== 'undefined') {
-                console.log('🔗 MetaMask detected');
+    
                 this.provider = window.ethereum;
                 
                 // Try to load ethers.js dynamically
@@ -122,7 +122,7 @@ export class DobiWeb3 {
             // Emit disconnect event
             this.emitEvent('web3:disconnected', {});
             
-            console.log('🔓 Wallet disconnected');
+
             
         } catch (error) {
             console.error('❌ Failed to disconnect wallet:', error);
@@ -160,7 +160,7 @@ export class DobiWeb3 {
                     network: this.network
                 });
                 
-                console.log('👛 Account changed:', this.account);
+    
             }
             
         } catch (error) {
@@ -177,7 +177,7 @@ export class DobiWeb3 {
                 network: this.network
             });
             
-            console.log('🌐 Network changed:', this.network);
+
             
         } catch (error) {
             console.error('❌ Failed to handle chain change:', error);

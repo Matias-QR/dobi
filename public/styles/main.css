@@ -16,6 +16,10 @@
     --warning-color: #fdcb6e;
     --info-color: #74b9ff;
     
+    /* Dobi Logo Colors */
+    --dobi-blue-light: #bcdef4;
+    --dobi-blue-dark: #4e7cb2;
+    
     --text-color: #ffffff;
     --text-light: #b2bec3;
     --text-muted: #636e72;
@@ -143,8 +147,8 @@ a:hover {
 }
 
 .nav-logo {
-    width: 40px;
-    height: 40px;
+    width: 62px;
+    height: 62px;
     border-radius: 8px;
     object-fit: cover;
 }
@@ -173,7 +177,7 @@ a:hover {
     left: 50%;
     width: 0;
     height: 2px;
-    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    background: linear-gradient(90deg, var(--dobi-blue-light), var(--dobi-blue-dark));
     transition: all 0.3s ease;
     transform: translateX(-50%);
 }
@@ -185,7 +189,7 @@ a:hover {
 
 .nav-btn:hover,
 .nav-btn.active {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    background: linear-gradient(135deg, var(--dobi-blue-light), var(--dobi-blue-dark));
     color: white;
     transform: translateY(-1px);
 }
@@ -197,7 +201,7 @@ a:hover {
 
 /* Hero Section */
 .hero {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 50%, var(--primary-dark) 100%);
+    background: var(--bg-color);
     color: white;
     padding: var(--spacing-2xl) 0;
     text-align: center;
@@ -268,13 +272,13 @@ a:hover {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    background: linear-gradient(90deg, var(--dobi-blue-light), var(--dobi-blue-dark));
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--primary-color);
+    border-color: var(--dobi-blue-dark);
 }
 
 .stat-card i {
@@ -366,6 +370,22 @@ a:hover {
 
 .text-right {
     text-align: right;
+}
+
+/* Gradient Text Classes */
+.gradient-text {
+    background: linear-gradient(135deg, var(--dobi-blue-light), var(--dobi-blue-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.text-glow {
+    text-shadow: 
+        0 0 10px rgba(188, 222, 244, 0.5),
+        0 0 20px rgba(188, 222, 244, 0.3),
+        0 0 30px rgba(188, 222, 244, 0.2);
 }
 
 .mt-1 { margin-top: var(--spacing-sm); }

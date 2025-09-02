@@ -16,19 +16,19 @@ export class ChargerService {
      */
     async getDetailedChargers() {
         try {
-            console.log('🔌 Fetching detailed chargers from API...');
+    
             
             const response = await httpService.get(this.endpoints.DETAILED);
             
             if (response.success) {
-                console.log('✅ Detailed chargers fetched successfully:', response.data);
+    
                 
                 // Handle the actual API response structure
                 let chargersData = response.data;
                 
                 // If the API returns an object with a 'chargers' property, extract it
                 if (chargersData && typeof chargersData === 'object' && chargersData.chargers) {
-                    console.log('📊 API returned object with chargers property, extracting...');
+        
                     chargersData = chargersData.chargers;
                 }
                 
@@ -71,12 +71,12 @@ export class ChargerService {
      */
     async getAllChargers() {
         try {
-            console.log('🔌 Fetching all chargers from API...');
+    
             
             const response = await httpService.get(this.endpoints.LIST);
             
             if (response.success) {
-                console.log('✅ All chargers fetched successfully:', response.data);
+    
                 return {
                     success: true,
                     data: response.data,
@@ -111,13 +111,13 @@ export class ChargerService {
                 throw new Error('Charger ID is required');
             }
 
-            console.log(`🔌 Fetching charger ${id} from API...`);
+    
             
             const endpoint = this.endpoints.BY_ID.replace('{id}', id);
             const response = await httpService.get(endpoint);
             
             if (response.success) {
-                console.log(`✅ Charger ${id} fetched successfully:`, response.data);
+    
                 return {
                     success: true,
                     data: response.data,
@@ -181,14 +181,14 @@ export class ChargerService {
             
             // Try to extract chargers from object structure
             if (chargersData && typeof chargersData === 'object' && chargersData.chargers) {
-                console.log('🔄 Attempting to extract chargers from object structure...');
+    
                 return this.transformChargersToDevices(chargersData.chargers);
             }
             
             return [];
         }
 
-        console.log(`🔄 Transforming ${chargersData.length} chargers to devices...`);
+        
         return chargersData.map(charger => this.transformChargerToDevice(charger));
     }
 
@@ -258,14 +258,20 @@ export class ChargerService {
      */
     async createCharger(chargerData) {
         try {
-            console.log('🔌 Creating new charger:', chargerData);
+
             
             // Validate required fields
-            const requiredFields = ['id_charger', 'owner_address', 'location', 'description', 'power'];
+            const requiredFields = ['id_charger', 'owner_address', 'location', 'description'];
             for (const field of requiredFields) {
-                if (!chargerData[field] || chargerData[field].trim() === '') {
+
+                if (!chargerData[field] || chargerData[field].toString().trim() === '') {
                     throw new Error(`Field '${field}' is required`);
                 }
+            }
+            
+            // Validate numeric fields
+            if (!chargerData.power || isNaN(chargerData.power) || chargerData.power <= 0) {
+                throw new Error('Power must be a positive number');
             }
 
             // Prepare charger data according to API structure
@@ -279,12 +285,12 @@ export class ChargerService {
                 power: chargerData.power
             };
 
-            console.log('📤 Sending charger data to API:', newCharger);
+
             
             const response = await httpService.post(this.endpoints.CREATE, newCharger);
             
             if (response.success) {
-                console.log('✅ Charger created successfully:', response.data);
+    
                 return {
                     success: true,
                     data: response.data,
@@ -316,12 +322,12 @@ export class ChargerService {
      */
     async updateCharger(id, updates) {
         try {
-            console.log(`🔌 Updating charger ${id}:`, updates);
+    
             
             const response = await httpService.put(this.endpoints.UPDATE.replace('{id}', id), updates);
             
             if (response.success) {
-                console.log(`✅ Charger ${id} updated successfully:`, response.data);
+    
                 return {
                     success: true,
                     data: response.data,
@@ -352,12 +358,12 @@ export class ChargerService {
      */
     async deleteCharger(id) {
         try {
-            console.log(`🔌 Deleting charger ${id}...`);
+    
             
             const response = await httpService.delete(this.endpoints.DELETE.replace('{id}', id));
             
             if (response.success) {
-                console.log(`✅ Charger ${id} deleted successfully`);
+    
                 return {
                     success: true,
                     message: 'Charger deleted successfully'
