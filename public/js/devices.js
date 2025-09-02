@@ -20,7 +20,7 @@ export class DobiDevices {
             // Set up event listeners
             this.setupEventListeners();
             
-            console.log('📱 Devices module initialized');
+    
             
         } catch (error) {
             console.error('❌ Failed to initialize devices module:', error);
@@ -70,8 +70,7 @@ export class DobiDevices {
                 this.chargers = chargersResponse.data;
                 this.devices = chargerService.transformChargersToDevices(this.chargers);
                 
-                console.log('🔌 Real chargers loaded from API:', this.chargers.length);
-                console.log('📱 Transformed devices:', this.devices.length);
+                
                 
                 // Update UI with real data
                 this.updateDevicesUI();
@@ -489,16 +488,17 @@ export class DobiDevices {
 
     // Utility methods
     validateDeviceData(deviceData) {
-        const required = ['id_charger', 'owner_address', 'description', 'location', 'power'];
+        const textFields = ['id_charger', 'owner_address', 'description', 'location'];
         
-        for (const field of required) {
-            if (!deviceData[field] || deviceData[field].trim() === '') {
+        // Validate text fields
+        for (const field of textFields) {
+            if (!deviceData[field] || deviceData[field].toString().trim() === '') {
                 throw new Error(`${field} is required`);
             }
         }
 
         // Validate power is a positive number
-        if (isNaN(deviceData.power) || deviceData.power <= 0) {
+        if (!deviceData.power || isNaN(deviceData.power) || deviceData.power <= 0) {
             throw new Error('Power must be a positive number');
         }
 

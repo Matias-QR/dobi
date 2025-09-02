@@ -18,7 +18,7 @@ class DobiApp {
 
     async init() {
         try {
-            console.log('🚀 Initializing Dobi Protocol Frontend...');
+
             
             // Initialize modules
             this.web3 = new DobiWeb3();
@@ -41,7 +41,7 @@ class DobiApp {
             this.setupGlobalEventListeners();
             
             this.isInitialized = true;
-            console.log('✅ Dobi Protocol Frontend initialized successfully');
+
             
             // Load initial data
             this.loadInitialData();
@@ -55,40 +55,33 @@ class DobiApp {
     setupGlobalEventListeners() {
         // Authentication events
         document.addEventListener('auth:connected', (e) => {
-            console.log('🔐 User authenticated:', e.detail);
             this.onUserAuthenticated(e.detail);
         });
 
         document.addEventListener('auth:disconnected', () => {
-            console.log('🔓 User disconnected');
             this.onUserDisconnected();
         });
 
         // Page change events
         document.addEventListener('page:changed', (e) => {
-            console.log('📄 Page changed to:', e.detail.page);
             this.onPageChanged(e.detail.page);
         });
 
         // Web3 events
         document.addEventListener('web3:accountChanged', (e) => {
-            console.log('👛 Account changed:', e.detail);
             this.onAccountChanged(e.detail);
         });
 
         document.addEventListener('web3:networkChanged', (e) => {
-            console.log('🌐 Network changed:', e.detail);
             this.onNetworkChanged(e.detail);
         });
 
         // Device events
         document.addEventListener('device:created', (e) => {
-            console.log('📱 Device created:', e.detail);
             this.onDeviceCreated(e.detail);
         });
 
         document.addEventListener('device:deleted', (e) => {
-            console.log('🗑️ Device deleted:', e.detail);
             this.onDeviceDeleted(e.detail);
         });
 
@@ -107,8 +100,8 @@ class DobiApp {
     async loadInitialData() {
         try {
             // Check if user is already authenticated
-            if (this.auth.isAuthenticated()) {
-                console.log('🔄 Loading data for authenticated user...');
+            if (this.auth.isAuthenticated) {
+
                 
                 // Load user's devices
                 await this.devices.loadDevices();
@@ -123,7 +116,7 @@ class DobiApp {
                 this.ui.updateUI();
                 
             } else {
-                console.log('👤 No authenticated user, showing login state');
+
                 this.ui.showInfo('Please connect your wallet to start using Dobi Protocol');
             }
             
@@ -183,7 +176,7 @@ class DobiApp {
     }
 
     onAccountChanged(accountData) {
-        if (this.auth.isAuthenticated()) {
+        if (this.auth.isAuthenticated) {
             // Re-authenticate with new account
             this.auth.handleAccountChange(accountData);
         }
@@ -277,7 +270,7 @@ class DobiApp {
      */
     async loadChargersFromAPI() {
         try {
-            console.log('🔌 Loading chargers from Dobi API...');
+
             
             // Show loading message
             if (this.ui) {
@@ -288,7 +281,7 @@ class DobiApp {
             const chargersResponse = await chargerService.getDetailedChargers();
             
             if (chargersResponse.success) {
-                console.log('✅ Chargers loaded successfully from API:', chargersResponse.data.length);
+
                 
                 // Update devices with real charger data
                 await this.devices.loadDevices();

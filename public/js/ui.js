@@ -17,7 +17,7 @@ export class DobiUI {
             // Initialize navigation
             this.updateNavigationUI();
             
-            console.log('🎨 UI module initialized');
+    
             
         } catch (error) {
             console.error('❌ Failed to initialize UI:', error);
@@ -142,7 +142,7 @@ export class DobiUI {
             // Emit page change event
             this.emitEvent('page:changed', { page: pageName });
 
-            console.log('📄 Navigated to:', pageName);
+    
 
         } catch (error) {
             console.error('❌ Navigation failed:', error);
@@ -227,37 +227,51 @@ export class DobiUI {
         
         try {
             const formData = new FormData(e.target);
-            const deviceData = {
-                name: formData.get('name'),
+            const chargerData = {
+                id_charger: formData.get('id_charger'),
+                owner_address: formData.get('owner_address'),
+                status: formData.get('status'),
+                location: formData.get('location'),
                 description: formData.get('description'),
-                photo: formData.get('photo') || null,
-                monitoringEndpoint: formData.get('monitoringEndpoint'),
-                actionEndpoint: formData.get('actionEndpoint'),
-                address: '0x' + Math.random().toString(16).substr(2, 40), // Mock address
-                createdAt: new Date().toISOString()
+                battery: parseInt(formData.get('battery')),
+                power: parseInt(formData.get('power'))
             };
 
             // Show loading
-            this.showLoading('Creating device...');
+            this.showLoading('Creating charger...');
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Emit device created event
-            this.emitEvent('device:created', deviceData);
-
-            // Show success message
-            this.showSuccess('Device created successfully!');
-
-            // Navigate back to devices page
-            this.navigateToPage('devices');
-
-            // Reset form
-            e.target.reset();
+            // Import charger service
+            const { chargerService } = await import('./services/chargerService.js');
+            
+            
+            
+            // Create charger via API
+            const result = await chargerService.createCharger(chargerData);
+            
+            if (result.success) {
+                // Show success message
+                this.showSuccess('Charger created successfully!');
+                
+                // Navigate back to devices page
+                this.navigateToPage('devices');
+                
+                // Reset form
+                e.target.reset();
+                
+                // Reload devices to show the new charger
+                if (window.dobiApp && window.dobiApp.getDevices) {
+                    const devicesModule = window.dobiApp.getDevices();
+                    if (devicesModule) {
+                        await devicesModule.loadDevices();
+                    }
+                }
+            } else {
+                throw new Error(result.error || 'Failed to create charger');
+            }
 
         } catch (error) {
-            console.error('❌ Failed to create device:', error);
-            this.showError('Failed to create device: ' + error.message);
+            console.error('❌ Failed to create charger:', error);
+            this.showError('Failed to create charger: ' + error.message);
         } finally {
             this.hideLoading();
         }
@@ -445,6 +459,6 @@ export class DobiUI {
 
     updateNetworkUI(networkData) {
         // Update network indicator if needed
-        console.log('🌐 Network UI updated:', networkData);
+
     }
 }
